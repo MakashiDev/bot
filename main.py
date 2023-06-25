@@ -1,4 +1,5 @@
 import discord  # py-cord
+import os
 
 intents = discord.Intents.default()
 intents.members = True
@@ -166,4 +167,4 @@ async def purge(ctx, amount=5):
     await ctx.send("Messages purged", delete_after=5)
 
 
-bot.run("MTEyMjAzMzA2NTAxNTkyMjc4OQ.G74C6a.07suhJljznZ71hbizxp5bxWnyISsomVpsFkPoI")
+bot.run(os.environ['TOKEN'])
