@@ -1,5 +1,9 @@
 import discord  # py-cord
-import os
+
+token = ""
+with open("token.txt", "r") as f:
+    token = f.read()
+
 
 intents = discord.Intents.default()
 intents.members = True
@@ -166,5 +170,6 @@ async def purge(ctx, amount=5):
     await ctx.channel.purge(limit=amount)
     await ctx.send("Messages purged", delete_after=5)
 
-
-bot.run(os.environ['TOKEN'])
+print("Bot is running")
+print(token)
+bot.run(token)
