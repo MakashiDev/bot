@@ -147,10 +147,15 @@ async def ping(ctx):
 
 
 @bot.command()
-async def testwelcome(ctx):
+async def welcome(ctx, member: discord.Member):
 
-    member = ctx.author.display_name
-    mention = ctx.author.mention
+    # check if the user has the admin role
+    if ctx.author.guild_permissions.administrator == False:
+        ctx.send("You do not have permission to use this command", ephemeral=True)
+        return
+
+    mention = member.mention
+    member = member.display_name
     welcomeChannel = bot.get_channel(1122027613070831687)
     embed = discord.Embed(title="Welcome " + member + " to the Kingdom of Doveria's Discord Server",
                           description="Kingdom of Doveria's Discord Server", color=0x00a6ff)
