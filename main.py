@@ -1,5 +1,7 @@
 import discord  # py-cord
 
+
+
 token = ""
 with open("token.txt", "r") as f:
     token = f.read()
