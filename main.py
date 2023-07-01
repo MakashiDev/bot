@@ -1,7 +1,6 @@
 import discord  # py-cord
 
 
-
 token = ""
 with open("token.txt", "r") as f:
     token = f.read()
@@ -173,6 +172,9 @@ async def welcome(ctx, member: discord.Member):
 
 @bot.command(desctiption="This command purges messages", aliases=["clear"], pass_context=True, brief="Purges messages", usage="purge", )
 async def purge(ctx, amount=5):
+    if ctx.author.guild_permissions.administrator == False:
+        await ctx.send("You do not have permission to use this command", delete_after=5)
+        return
     amount = int(amount)
     await ctx.channel.purge(limit=amount)
     await ctx.send("Messages purged", delete_after=5)
