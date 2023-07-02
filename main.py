@@ -57,7 +57,7 @@ async def createTicket(ticketType, interaction):
 
     embed = discord.Embed(title="Welcome to your " + ticketType + " ticket",
                           description="Please follow the format below for explaining your issue.", color=0x00a6ff)
-    if ticketType == "Support":
+    if ticketType == "Support" or ticketType == "Other":
         embed.add_field(name="Format",
                         value="IGN", inline=False)
         embed.add_field(name="",
@@ -115,7 +115,7 @@ class MyView(discord.ui.View):
 async def setUpTickets():
     ticketChannel = bot.get_channel(1125123275832434778)
     try:
-        ticketMessage = await ticketChannel.fetch_message(1122049720253173760)
+        ticketMessage = await ticketChannel.fetch_message(1125125158139596861)
     except:
         ticketMessage = await ticketChannel.send("Click the button below to create a ticket")
     ticketLogChannel = bot.get_channel(1122047542654414888)
