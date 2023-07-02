@@ -142,7 +142,6 @@ async def setUpTickets():
     try:
         await ticketMessage.edit(embed=embed, view=MyView())
     except:
-        await ticketMessage.delete()
         await ticketChannel.send(embed=embed, view=MyView())
 
     # Send a log message
