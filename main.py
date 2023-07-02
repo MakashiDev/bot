@@ -113,7 +113,7 @@ class MyView(discord.ui.View):
 
 
 async def setUpTickets():
-    ticketChannel = bot.get_channel(1122028695712956447)
+    ticketChannel = bot.get_channel(1125123275832434778)
     ticketMessage = await ticketChannel.fetch_message(1122049720253173760)
     ticketLogChannel = bot.get_channel(1122047542654414888)
     # Embed explaing how to create a ticket
@@ -139,9 +139,12 @@ async def setUpTickets():
         async def other(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Other", interaction)
     # Send the message
-    await ticketMessage.edit(embed=embed, view=MyView())
-    # Delete the ticket channel
-    await ticketChannel.delete()
+    try:
+        await ticketMessage.edit(embed=embed, view=MyView())
+    except:
+        await ticketMessage.delete()
+        await ticketChannel.send(embed=embed, view=MyView())
+
     # Send a log message
     logging.info("Ticket setup complete")
 
@@ -170,6 +173,13 @@ async def purge(ctx, amount=5):
     await ctx.channel.purge(limit=amount)
     await ctx.send("Messages purged", delete_after=5)
 
+
+# send ticket message
+@bot.command(description="This command sets up the ticket system", aliases=["setup"], pass_context=True, brief="Sets up the ticket system", usage="setup")
+async def ticket(ctx):
+    logging.info(
+        f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+    await setUpTickets()
 
 # Run the bot
 logging.info("Bot is running")
