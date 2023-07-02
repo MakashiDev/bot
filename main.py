@@ -113,15 +113,37 @@ class MyView(discord.ui.View):
 
 
 async def setUpTickets():
-    guild = bot.get_guild(1122047542654414880)
-    ticketCategory = bot.get_channel(1122053063604195338)
+    ticketChannel = bot.get_channel(1122028695712956447)
+    ticketMessage = await ticketChannel.fetch_message(1122049720253173760)
     ticketLogChannel = bot.get_channel(1122047542654414888)
-    for channel in guild.channels:
-        if channel.category == ticketCategory and channel.name.endswith("-closed"):
-            await channel.delete()
-        if channel.category == ticketCategory and not channel.name.endswith("-closed"):
-            await channel.edit(topic="Ticket created by " + interaction.user.display_name)
-    await ticketLogChannel.send("Tickets have been reset.")
+    # Embed explaing how to create a ticket
+    embed = discord.Embed(title="How to create a ticket",
+                          description="To create a ticket click the button based on your ticket needs", color=0x00a6ff)
+    embed.add_field(name=":white_check_mark: Support",
+                    value="Click the button below to create a support ticket", inline=False)
+    embed.add_field(name=":trophy: Joining",
+                    value="Click the button below to create a joining ticket", inline=False)
+    embed.add_field(name=":man_shrugging: Other",
+                    value="Click the button below to create a other ticket", inline=False)
+
+    class MyView(discord.ui.View):
+        @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
+        async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
+            await createTicket("Support", interaction)
+
+        @discord.ui.button(label='Joining', style=discord.ButtonStyle.grey, emoji="🏆")
+        async def joining(self, button: discord.ui.Button, interaction: discord.Interaction):
+            await createTicket("Joining", interaction)
+
+        @discord.ui.button(label='Other', style=discord.ButtonStyle.grey, emoji="🤷‍♂️")
+        async def other(self, button: discord.ui.Button, interaction: discord.Interaction):
+            await createTicket("Other", interaction)
+    # Send the message
+    await ticketMessage.edit(embed=embed, view=MyView())
+    # Delete the ticket channel
+    await ticketChannel.delete()
+    # Send a log message
+    logging.info("Ticket setup complete")
 
 
 @bot.command(description="This command pings the bot")
