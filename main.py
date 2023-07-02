@@ -114,7 +114,10 @@ class MyView(discord.ui.View):
 
 async def setUpTickets():
     ticketChannel = bot.get_channel(1125123275832434778)
-    ticketMessage = await ticketChannel.fetch_message(1122049720253173760)
+    try:
+        ticketMessage = await ticketChannel.fetch_message(1122049720253173760)
+    except:
+        ticketMessage = await ticketChannel.send("Click the button below to create a ticket")
     ticketLogChannel = bot.get_channel(1122047542654414888)
     # Embed explaing how to create a ticket
     embed = discord.Embed(title="How to create a ticket",
