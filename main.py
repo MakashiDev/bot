@@ -49,7 +49,7 @@ async def createTicket(ticketType, interaction):
 
     supportRole = interaction.guild.get_role(1122050028186370068)
     ticketLogChannel = bot.get_channel(1122047542654414888)
-    ticketCategory = bot.get_channel(1122053063604195338)
+    ticketCategory = bot.get_channel(1125927939066826822)
     with open("ticketCount.txt", "r") as f:
         ticketCount = int(f.read())
     ticketCount += 1
@@ -122,15 +122,14 @@ async def createTicket(ticketType, interaction):
     await ticketChannel.send(supportRole.mention)
     await ticketChannel.send(embed=embed, view=MyView())
     await ticketLogChannel.send("Ticket " + ticketChannel.name + " was created by " + interaction.user.display_name)
-    logging.info("Ticket " + ticketChannel.name + " was created by " + interaction.user.display_name)
 
-        logging.info(
+    logging.info(
             f"Ticket closed: {ticketChannel.name} | User: {interaction.user.name}#{interaction.user.discriminator}")
 
-        # Delete the ticket channel
-        await ticketChannel.delete()
-        # Send a log message
-        await ticketLogChannel.send(f"The ticket `{ticketChannel.name}` has been closed by {interaction.user.mention}")
+    # Delete the ticket channel
+    await ticketChannel.delete()
+    # Send a log message
+    await ticketLogChannel.send(f"The ticket `{ticketChannel.name}` has been closed by {interaction.user.mention}")
 
 
 async def setUpTickets():
