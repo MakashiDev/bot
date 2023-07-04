@@ -126,8 +126,7 @@ async def createTicket(ticketType, interaction):
     logging.info(
             f"Ticket closed: {ticketChannel.name} | User: {interaction.user.name}#{interaction.user.discriminator}")
 
-    # Delete the ticket channel
-    await ticketChannel.delete()
+
     # Send a log message
     await ticketLogChannel.send(f"The ticket `{ticketChannel.name}` has been closed by {interaction.user.mention}")
 
