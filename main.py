@@ -134,7 +134,8 @@ async def createTicket(ticketType, interaction):
 
 async def setUpTickets():
     # get the channel named tickets in the server
-    ticketChannel = bot.get_channel(1125123275832434778)
+    server = bot.get_guild(1091499066887770213)
+    ticketChannel = server.get_channel(1125123275832434778)
     try:
         await ticketChannel.purge(limit=100)
     except:
