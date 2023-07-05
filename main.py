@@ -111,7 +111,8 @@ async def createTicket(ticketType, interaction):
         embed.add_field(name="Play style", value="", inline=False)
         embed.add_field(name="Previous experience",
                         value="", inline=False)
-        embed.add_field(name="", value="", inline=False)
+        embed.add_field(name="What town would you want to join?",
+                        value="", inline=False)
 
     embed.set_footer(
         text="You can upload screenshots or any other related information.")
