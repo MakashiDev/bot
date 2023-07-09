@@ -426,5 +426,20 @@ async def ticket(ctx):
         await ctx.send("You do not have permission to use this command", ephemeral=True)
         return
 
+
+@bot.command(description="Kicks user due to treson", aliases=["kickTreasoon"], pass_context=True, brief="Kicks user due to treson", usage="kickTreason")
+async def kickTreason(ctx, member: discord.Member):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        reason = "Treason"
+
+        await member.kick(reason=reason)
+        await ctx.send(f"{member.mention} has been kicked for Treason against the Kingdom of Doveria")
+        await member.send(f"You have been kicked from the Kingdom of Doveria for Treason")
+    else:
+        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        return
+
 # Run the bot
 bot.run(token)
