@@ -35,7 +35,7 @@ with open("server.json", "r") as f:
     supportRoleId = server["roles"]["supportRoleId"]
     carrothianRoleID = server["roles"]["carrothianRoleID"]
     doverianRoleID = server["roles"]["doverianRoleID"]
-    SkycliffRoleID = server["roles"]["SkycliffRoleID"]
+    skycliffRoleID = server["roles"]["skycliffRoleID"]
     
 
 
