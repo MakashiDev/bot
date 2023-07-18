@@ -51,7 +51,6 @@ def setToJson(index, value):
         json.dump(server, f)
 
 
-# logging.basicConfig(level=logging.INFO)
 
 
 @bot.event

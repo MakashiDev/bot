@@ -7,13 +7,13 @@
 	"leaders": {
 		"carrothianLeaderID": 577985634359050251,
 		"doverianLeaderID": 978981126544691210,
-		"eastmitLeaderID": 1012918078318846043
+		"SkycliffLeaderID": 1012918078318846043
 	},
 	"roles": {
 		"supportRoleId": 1122050028186370068,
 		"carrothianRoleID": 1125921447760646216,
 		"doverianRoleID": 1125921790301048925,
-		"eastmitRoleID": 1129135953294930088
+		"skycliffRoleID": 1129135953294930088
 	},
 	"ticketCount": 30
 }
