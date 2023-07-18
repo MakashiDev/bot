@@ -24,20 +24,31 @@ bot = discord.Bot(intents=intents)
 
 with open("server.json", "r") as f:
     server = json.load(f)
-    global guildId, ticketChannelId, ticketLogChannelId, ticketCategory, ticketMsg, carrothianLeaderID, doverianLeaderID, eastmitLeaderID, supportRoleId, carrothianRoleID, doverianRoleID, eastmitRoleID, ticketCount
+    global guildId, ticketChannelId, ticketLogChannelId, ticketCategory, carrothianLeaderID, doverianLeaderID, SkycliffLeaderID, supportRoleId, carrothianRoleID, doverianRoleID, SkycliffRoleID
     guildId = server["guildId"]
     ticketChannelId = server["ticketChannelId"]
     ticketLogChannelId = server["ticketLogChannelId"]
     ticketCategory = server["ticketCategory"]
-    ticketMsg = server["ticketMsg"]
     carrothianLeaderID = server["leaders"]["carrothianLeaderID"]
     doverianLeaderID = server["leaders"]["doverianLeaderID"]
-    eastmitLeaderID = server["leaders"]["eastmitLeaderID"]
+    SkycliffLeaderID = server["leaders"]["SkycliffLeaderID"]
     supportRoleId = server["roles"]["supportRoleId"]
     carrothianRoleID = server["roles"]["carrothianRoleID"]
     doverianRoleID = server["roles"]["doverianRoleID"]
-    eastmitRoleID = server["roles"]["eastmitRoleID"]
-    ticketCount = server["ticketCount"]
+    SkycliffRoleID = server["roles"]["SkycliffRoleID"]
+    
+
+
+def getFromJson(index):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        return server[index]
+    
+def setToJson(index, value):
+    with open("server.json", "w") as f:
+        server = json.load(f)
+        server[index] = value
+        json.dump(server, f)
 
 
 # logging.basicConfig(level=logging.INFO)
@@ -51,9 +62,7 @@ async def on_ready():
     await setUpTickets()
 
 
-@bot.event
-async def on_member_join(member):
-    logging.info(f"User joined: {member.name}#{member.discriminator}")
+
 
 
 @bot.event
@@ -67,13 +76,12 @@ async def createTicket(ticketType, interaction):
     supportRole = interaction.guild.get_role(supportRoleId)
     ticketLogChannel = interaction.guild.get_channel(ticketLogChannelId)
     catergory = interaction.guild.get_channel(ticketCategory)
-    localticketCount = ticketCount + 1
-    with open("server.json", "w") as f:
-        server["ticketCount"] = localticketCount
-        json.dump(server, f)
+    ticketCount = getFromJson("ticketCount") + 1
+    setToJson("ticketCount", ticketCount)
+    
 
     # Create the ticket channel
-    ticketChannel = await interaction.guild.create_text_channel(ticketType + "-" + str(localticketCount), topic="Ticket created by " + interaction.user.display_name, category=catergory)
+    ticketChannel = await interaction.guild.create_text_channel(ticketType + "-" + str(ticketCount), topic="Ticket created by " + interaction.user.display_name, category=catergory)
     # Give the user access to the channel
     await ticketChannel.set_permissions(interaction.user, read_messages=True, send_messages=True, attach_files=True, embed_links=True, add_reactions=True,)
     # Give the support role access to the channel
@@ -147,7 +155,7 @@ async def setUpTickets():
     ticketChannel = server.get_channel(ticketChannelId)
     ticketMessage = None
     try:
-        ticketMessage = await ticketChannel.fetch_message(ticketMsg)
+        ticketMessage = await ticketChannel.fetch_message(getFromJson("ticketMsg"))
     except:
         print("Ticket message not found")
 
@@ -177,11 +185,10 @@ async def setUpTickets():
     try:
         await ticketMessage.edit(embed=embed, view=MyView())
     except:
-        await ticketChannel.send(embed=embed, view=MyView())
-        with open('server.json', 'r+') as f:
-            data = json.load(f)
-            data['ticketMsg'] = ticketMessage.id
-            json.dump(data, f)
+        new_message = await ticketChannel.send(embed=embed, view=MyView())
+        server["ticketMsg"] = new_message.id
+        with open('server.json', 'w') as f:
+            json.dump(server, f)
 
     # Send a log message
     logging.info("Ticket setup complete")
@@ -203,7 +210,7 @@ async def on_member_join(member):
                     value="Here you can chat with everyone", inline=True)
     await welcomeChannel.send(mention)
     await welcomeChannel.send(embed=embed)
-    logging.info(displayName + " joined the server")
+    logging.info(f"User joined: {member.name}#{member.discriminator}")
 
 
 @bot.command(description="This command pings the bot")
@@ -227,14 +234,14 @@ async def process(ctx, member: discord.Member):
     if ctx.author.guild_permissions.administrator == False:
         ctx.send("You do not have permission to use this command", ephemeral=True)
         return
-    # make dropdown menu for the following towns, Carrothia, Doveria, and Eastmit
+    # make dropdown menu for the following towns, Carrothia, Doveria, and Skycliff
     options = [
         discord.SelectOption(
             label="Carrothia", description="Carrothia", emoji="🏰"),
         discord.SelectOption(
             label="Doveria", description="Doveria", emoji="🏰"),
         discord.SelectOption(
-            label="Eastmit", description="Eastmit", emoji="🏰"),
+            label="Skycliff", description="Skycliff", emoji="🏰"),
     ]
 
     class MyView(discord.ui.View):
@@ -250,7 +257,7 @@ async def process(ctx, member: discord.Member):
                 return
             carrothianLeader = bot.get_user(carrothianLeaderID)
             doveriaLeader = bot.get_user(doverianLeaderID)
-            eastmitLeader = bot.get_user(eastmitLeaderID)
+            SkycliffLeader = bot.get_user(SkycliffLeaderID)
 
             self.value = select.values[0]
             if self.value == "Carrothia":
@@ -262,7 +269,7 @@ async def process(ctx, member: discord.Member):
                 await carrothianLeader.send("Please type /accept " + member.mention + " in <#" + str(channel) + ">")
                 await carrothianLeader.send("Please type /deny " + member.mention + " in <#" + str(channel) + ">")
                 await channel.send(carrothianLeader.mention)
-                await channel.send(member.mention)
+                channel.send(member.mention)
                 embed = discord.Embed(title="Welcome " + member.display_name + " to the Kingdom of Doveria",
                                       description="Town: Carrothia", color=0x00a6ff)
                 embed.add_field(name="Please wait for a leader to process you",
@@ -288,15 +295,15 @@ async def process(ctx, member: discord.Member):
                 await channel.send(embed=embed)
                 # delete the message
                 await interaction.message.delete()
-            elif self.value == "Eastmit":
-                await eastmitLeader.send(member.mention + " is waiting to be processed to join Eastmit")
+            elif self.value == "Skycliff":
+                await SkycliffLeader.send(member.mention + " is waiting to be processed to join Skycliff")
                 channel = interaction.channel.id
                 channel = bot.get_channel(channel)
-                # give eastmit leader perms to the channel
-                await channel.set_permissions(eastmitLeader, read_messages=True, send_messages=True, manage_messages=True, view_channel=True, embed_links=True, attach_files=True, read_message_history=True, external_emojis=True, add_reactions=True)
-                await eastmitLeader.send("Please type /accept " + member.mention + " in <#" + str(channel) + ">")
-                await eastmitLeader.send("Please type /deny " + member.mention + " in <#" + str(channel) + ">")
-                await channel.send(eastmitLeader.mention)
+                # give Skycliff leader perms to the channel
+                await channel.set_permissions(SkycliffLeader, read_messages=True, send_messages=True, manage_messages=True, view_channel=True, embed_links=True, attach_files=True, read_message_history=True, external_emojis=True, add_reactions=True)
+                await SkycliffLeader.send("Please type /accept " + member.mention + " in <#" + str(channel) + ">")
+                await SkycliffLeader.send("Please type /deny " + member.mention + " in <#" + str(channel) + ">")
+                await channel.send(SkycliffLeader.mention)
                 await channel.send(member.mention)
                 embed = discord.Embed(title="Welcome " + member.display_name + " to the Kingdom of Doveria",
                                       description="Town: Easmit", color=0x00a6ff)
@@ -318,7 +325,7 @@ async def accept(ctx, member: discord.Member):
     # check if user is carrothian leader
     carrothianLeader = bot.get_user(carrothianLeaderID)
     doveriaLeader = bot.get_user(doverianLeaderID)
-    eastmitLeader = bot.get_user(eastmitLeaderID)
+    SkycliffLeader = bot.get_user(SkycliffLeaderID)
     if ctx.author == carrothianLeader:
         channel = bot.get_channel(ctx.channel.id)
         # give the user the role
@@ -346,20 +353,20 @@ async def accept(ctx, member: discord.Member):
         await member.send("You have been accepted into Doveria")
         # send message to the channel
         await channel.send(member.mention + " has been accepted into Doveria")
-    # check if user is eastmit leader
-    elif ctx.author == eastmitLeader:
+    # check if user is Skycliff leader
+    elif ctx.author == SkycliffLeader:
         channel = bot.get_channel(ctx.channel.id)
         # give the user the role
-        role = discord.utils.get(ctx.guild.roles, name="Citizen of Eastmit")
+        role = discord.utils.get(ctx.guild.roles, name="Citizen of Skycliff")
         await member.add_roles(role)
         role = discord.utils.get(ctx.guild.roles, name="Citizen")
         await member.add_roles(role)
         # remove the user from the channel
         await channel.set_permissions(member, read_messages=False, send_messages=False, view_channel=False)
         # send message to the user
-        await member.send("You have been accepted into Eastmit")
+        await member.send("You have been accepted into Skycliff")
         # send message to the channel
-        await channel.send(member.mention + " has been accepted into Eastmit")
+        await channel.send(member.mention + " has been accepted into Skycliff")
     else:
         await ctx.send("You do not have permission to use this command", ephemeral=True)
         return
@@ -369,7 +376,7 @@ async def accept(ctx, member: discord.Member):
 async def deny(ctx, member: discord.Member, reason=None):
     carrothianLeader = bot.get_user(carrothianLeaderID)
     doveriaLeader = bot.get_user(doverianLeaderID)
-    eastmitLeader = bot.get_user(eastmitLeaderID)
+    SkycliffLeader = bot.get_user(SkycliffLeaderID)
 
     # check if user is carrothian leader
     if ctx.author == carrothianLeader:
@@ -391,15 +398,15 @@ async def deny(ctx, member: discord.Member, reason=None):
         # send message to the channel
         await channel.send(member.mention + " has been denied into Doveria for " + reason)
         await channel.send("Please try joining a different town")
-    # check if user is eastmit leader
-    elif ctx.author == eastmitLeader:
+    # check if user is Skycliff leader
+    elif ctx.author == SkycliffLeader:
         channel = bot.get_channel(ctx.channel.id)
         # remove the user from the channel
         await channel.set_permissions(member, read_messages=False, send_messages=False, view_channel=False)
         # send message to the user
-        await member.send("You have been denied into Eastmit")
+        await member.send("You have been denied into Skycliff")
         # send message to the channel
-        await channel.send(member.mention + " has been denied into Eastmit for " + reason)
+        await channel.send(member.mention + " has been denied into Skycliff for " + reason)
         await channel.send("Please try joining a different town")
     else:
         await ctx.send("You do not have permission to use this command", ephemeral=True)
@@ -425,21 +432,55 @@ async def ticket(ctx):
     else:
         await ctx.send("You do not have permission to use this command", ephemeral=True)
         return
-
-
-@bot.command(description="Kicks user due to treson", aliases=["kickTreasoon"], pass_context=True, brief="Kicks user due to treson", usage="kickTreason")
-async def kickTreason(ctx, member: discord.Member):
+    
+# add a ban command
+@bot.command(description="This command bans a user", aliases=["ban"], pass_context=True, brief="Bans a user", usage="ban")
+async def ban(ctx, member: discord.Member, reason=None):
     if ctx.author.guild_permissions.administrator:
         logging.info(
-            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-        reason = "Treason"
-
-        await member.kick(reason=reason)
-        await ctx.send(f"{member.mention} has been kicked for Treason against the Kingdom of Doveria")
-        await member.send(f"You have been kicked from the Kingdom of Doveria for Treason")
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Banned User: {member.name}#{member.discriminator}, Reason: {reason}")
+        await member.ban(reason=reason)
+        if reason == "Treason":
+            embed = discord.Embed(title="Treason", description="User kicked for treason", color=0x00a6ff)
+            embed.add_field(name="User", value=member.mention, inline=False)
+            embed.add_field(name="Reason", value="This person has been found guilty of Treason", inline=False)
+            embed.add_field(name="Banned By", value=ctx.author.mention, inline=False)
+            await ctx.send(embed=embed)
+            return
+        # fancy embed saying who was banned, reason, and who banned them
+        embed = discord.Embed(title="Ban", description="User banned", color=0x00a6ff)
+        embed.add_field(name="User", value=member.mention, inline=False)
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Banned by", value=ctx.author.mention, inline=False)
+        await ctx.send(embed=embed)
     else:
         await ctx.send("You do not have permission to use this command", ephemeral=True)
         return
-
+    
+#kick command with mad fancy embed
+@bot.command(description="This command kicks a user", aliases=["kick"], pass_context=True, brief="Kicks a user", usage="kick")
+async def kick(ctx, member: discord.Member, reason=None):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Kicked User: {member.name}#{member.discriminator}, Reason: {reason}")
+        await member.kick(reason=reason)
+        # check if reason is Treason and if it is do a fnacy embed saying they were kicked for treason
+        if reason == "Treason":
+            embed = discord.Embed(title="Treason", description="User kicked for treason", color=0x00a6ff)
+            embed.add_field(name="User", value=member.mention, inline=False)
+            embed.add_field(name="Reason", value="This person has been found guilty of Treason", inline=False)
+            embed.add_field(name="Kicked By", value=ctx.author.mention, inline=False)
+            await ctx.send(embed=embed)
+            return
+        # fancy embed saying who was kicked, reason, and who kicked them
+        embed = discord.Embed(title="Kick", description="User kicked", color=0x00a6ff)
+        embed.add_field(name="User", value=member.mention, inline=False)
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Kicked by", value=ctx.author.mention, inline=False)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        return
+ 
 # Run the bot
 bot.run(token)
