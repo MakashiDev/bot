@@ -170,7 +170,8 @@ async def setUpTickets():
                     value="Click the button below to create a other ticket", inline=False)
 
     class MyView(discord.ui.View):
-        super().__init__(timeout=None)
+        def __int__(self):
+            super().__init__(timeout=None)
         @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
         async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Support", interaction)
