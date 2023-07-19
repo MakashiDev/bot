@@ -483,8 +483,8 @@ async def kick(ctx, member: discord.Member, reason=None):
         return
     
 # report bot issues
-@bot.command(description="This command reports a bug", aliases=["bug"], pass_context=True, brief="Reports a bug", usage="bug")
-async def bug(ctx, *, bug):
+@bot.command(description="This command reports a bug", aliases=["reportBug"], pass_context=True, brief="Reports a bug", usage="reportBug")
+async def reportBug(ctx, *, bug):
     logging.info(
         f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
     # fancy embed saying who reported the bug and what the bug is
