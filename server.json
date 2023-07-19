@@ -4,7 +4,7 @@
 	"ticketLogChannelId": 1122047542654414888,
 	"ticketCategory": 1125927939066826822,
 	"ticketMsg": 1126302297538969650,
-	"botBugsChannelId": 1131019420890828820,
+	"bugsChannelId": 1131019420890828820,
 	"leaders": {
 		"carrothianLeaderID": 577985634359050251,
 		"doverianLeaderID": 978981126544691210,
