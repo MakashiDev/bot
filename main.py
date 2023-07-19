@@ -481,6 +481,20 @@ async def kick(ctx, member: discord.Member, reason=None):
     else:
         await ctx.send("You do not have permission to use this command", ephemeral=True)
         return
+    
+# report bot issues
+@bot.command(description="This command reports a bug", aliases=["bug"], pass_context=True, brief="Reports a bug", usage="bug")
+async def bug(ctx, *, bug):
+    logging.info(
+        f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+    # fancy embed saying who reported the bug and what the bug is
+    embed = discord.Embed(title="Bug Report", description="Bug reported", color=0x00a6ff)
+    embed.add_field(name="Reported By", value=ctx.author.mention, inline=False)
+    embed.add_field(name="Bug", value=bug, inline=False)
+    await ctx.send(f"Thanks for reporting the bug {ctx.author.mention}", delete_after=5)
+    bugsChannelId = bot.get_guild(guildId).get_channel(getFromJson("bugsChannelId"))
+    await bugsChannelId.send(embed=embed)
+
  
 # Run the bot
 bot.run(token)
