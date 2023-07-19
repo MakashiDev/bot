@@ -3,7 +3,7 @@ import logging
 import json
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 
 
 token = ""
@@ -169,7 +169,8 @@ async def setUpTickets():
     embed.add_field(name=":man_shrugging: Other",
                     value="Click the button below to create a other ticket", inline=False)
 
-    class MyView(discord.ui.View):
+    class MyView(discord.ui.View(timeout=None)):
+
         @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
         async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Support", interaction)
@@ -222,6 +223,10 @@ async def ping(ctx):
 
 
 @bot.command()
+@discord.default_permissions(
+    administrator=True
+)
+
 async def welcome(ctx, member: discord.Member):
     on_member_join(member)
     logging.info(
@@ -229,6 +234,9 @@ async def welcome(ctx, member: discord.Member):
 
 
 @bot.command(description="This command allows Admins to process users joining the kingdom", aliases=["process"], pass_context=True, brief="process a user for joining a town", usage="process", )
+@discord.default_permissions(
+    administrator=True
+)
 async def process(ctx, member: discord.Member):
     channel = bot.get_channel(ctx.channel.id)
     if ctx.author.guild_permissions.administrator == False:
@@ -321,6 +329,9 @@ async def process(ctx, member: discord.Member):
 
 
 @bot.command(description="This command allows Admins to accept users joining the kingdom", aliases=["accept"], pass_context=True, brief="accept a user for joining a town", usage="accept", )
+@discord.default_permissions(
+    manage_messages=True
+)
 async def accept(ctx, member: discord.Member):
     # check if user is carrothian leader
     carrothianLeader = bot.get_user(carrothianLeaderID)
@@ -373,6 +384,9 @@ async def accept(ctx, member: discord.Member):
 
 
 @bot.command(description="This command allows Admins to deny users joining a town", aliases=["deny"], pass_context=True, brief="deny a user for joining a town", usage="deny", )
+@discord.default_permissions(
+    manage_messages=True
+)
 async def deny(ctx, member: discord.Member, reason=None):
     carrothianLeader = bot.get_user(carrothianLeaderID)
     doveriaLeader = bot.get_user(doverianLeaderID)
@@ -414,6 +428,7 @@ async def deny(ctx, member: discord.Member, reason=None):
 
 
 @bot.command(desctiption="This command purges messages", aliases=["clear"], pass_context=True, brief="Purges messages", usage="purge", )
+@discord.default_permissions(administrator=True)
 async def purge(ctx, amount=5):
     logging.info(
         f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
@@ -424,6 +439,7 @@ async def purge(ctx, amount=5):
 
 # send ticket message
 @bot.command(description="This command sets up the ticket system", aliases=["setup"], pass_context=True, brief="Sets up the ticket system", usage="setup")
+@discord.default_permissions(administrator=True)
 async def ticket(ctx):
     if ctx.author.guild_permissions.administrator:
         logging.info(
@@ -435,6 +451,8 @@ async def ticket(ctx):
     
 # add a ban command
 @bot.command(description="This command bans a user", aliases=["ban"], pass_context=True, brief="Bans a user", usage="ban")
+@discord.default_permissions(administrator=True)
+
 async def ban(ctx, member: discord.Member, reason=None):
     if ctx.author.guild_permissions.administrator:
         logging.info(
@@ -459,6 +477,8 @@ async def ban(ctx, member: discord.Member, reason=None):
     
 #kick command with mad fancy embed
 @bot.command(description="This command kicks a user", aliases=["kick"], pass_context=True, brief="Kicks a user", usage="kick")
+@discord.default_permissions(administrator=True)
+
 async def kick(ctx, member: discord.Member, reason=None):
     if ctx.author.guild_permissions.administrator:
         logging.info(
