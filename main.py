@@ -217,7 +217,7 @@ async def on_member_join(member):
 async def ping(ctx):
     logging.info(
         f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    await ctx.send("pong")
+    await ctx.respond("pong")
     logging.info("pong used by " + ctx.author.display_name)
 
 
@@ -232,7 +232,7 @@ async def welcome(ctx, member: discord.Member):
 async def process(ctx, member: discord.Member):
     channel = bot.get_channel(ctx.channel.id)
     if ctx.author.guild_permissions.administrator == False:
-        ctx.send("You do not have permission to use this command", ephemeral=True)
+        ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
     # make dropdown menu for the following towns, Carrothia, Doveria, and Skycliff
     options = [
@@ -317,7 +317,7 @@ async def process(ctx, member: discord.Member):
                 return
 
     # send message to the channel but only the user who used the command can see it
-    await ctx.send("Admin Please select the town for processing.", view=MyView())
+    await ctx.respond("Admin Please select the town for processing.", view=MyView())
 
 
 @bot.command(description="This command allows Admins to accept users joining the kingdom", aliases=["accept"], pass_context=True, brief="accept a user for joining a town", usage="accept", )
@@ -368,7 +368,7 @@ async def accept(ctx, member: discord.Member):
         # send message to the channel
         await channel.send(member.mention + " has been accepted into Skycliff")
     else:
-        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
 
 
@@ -409,7 +409,7 @@ async def deny(ctx, member: discord.Member, reason=None):
         await channel.send(member.mention + " has been denied into Skycliff for " + reason)
         await channel.send("Please try joining a different town")
     else:
-        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
 
 
@@ -419,7 +419,7 @@ async def purge(ctx, amount=5):
         f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
     amount = int(amount)
     await ctx.channel.purge(limit=amount)
-    await ctx.send("Messages purged", delete_after=5)
+    await ctx.respond("Messages purged", delete_after=5)
 
 
 # send ticket message
@@ -430,7 +430,7 @@ async def ticket(ctx):
             f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
         await setUpTickets()
     else:
-        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
     
 # add a ban command
@@ -445,16 +445,16 @@ async def ban(ctx, member: discord.Member, reason=None):
             embed.add_field(name="User", value=member.mention, inline=False)
             embed.add_field(name="Reason", value="This person has been found guilty of Treason", inline=False)
             embed.add_field(name="Banned By", value=ctx.author.mention, inline=False)
-            await ctx.send(embed=embed)
+            await ctx.respond(embed=embed)
             return
         # fancy embed saying who was banned, reason, and who banned them
         embed = discord.Embed(title="Ban", description="User banned", color=0x00a6ff)
         embed.add_field(name="User", value=member.mention, inline=False)
         embed.add_field(name="Reason", value=reason, inline=False)
         embed.add_field(name="Banned by", value=ctx.author.mention, inline=False)
-        await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
     else:
-        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
     
 #kick command with mad fancy embed
@@ -470,28 +470,29 @@ async def kick(ctx, member: discord.Member, reason=None):
             embed.add_field(name="User", value=member.mention, inline=False)
             embed.add_field(name="Reason", value="This person has been found guilty of Treason", inline=False)
             embed.add_field(name="Kicked By", value=ctx.author.mention, inline=False)
-            await ctx.send(embed=embed)
+            await ctx.respond(embed=embed)
             return
         # fancy embed saying who was kicked, reason, and who kicked them
         embed = discord.Embed(title="Kick", description="User kicked", color=0x00a6ff)
         embed.add_field(name="User", value=member.mention, inline=False)
         embed.add_field(name="Reason", value=reason, inline=False)
         embed.add_field(name="Kicked by", value=ctx.author.mention, inline=False)
-        await ctx.send(embed=embed)
+        await ctx.respond(embed=embed)
     else:
-        await ctx.send("You do not have permission to use this command", ephemeral=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
     
 # report bot issues
+
 @bot.command(description="This command reports a bug", aliases=["reportBug"], pass_context=True, brief="Reports a bug", usage="reportBug")
-async def reportBug(ctx, *, bug):
+async def reportbug(ctx, command: str, bug: str):
     logging.info(
         f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
     # fancy embed saying who reported the bug and what the bug is
-    embed = discord.Embed(title="Bug Report", description="Bug reported", color=0x00a6ff)
-    embed.add_field(name="Reported By", value=ctx.author.mention, inline=False)
-    embed.add_field(name="Bug", value=bug, inline=False)
-    await ctx.send(f"Thanks for reporting the bug {ctx.author.mention}", delete_after=5)
+    embed = discord.Embed(title="Bug Report", description=f"{ctx.author.mention} reported a bug", color=0xff2600)
+    embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar)
+    embed.add_field(name=command, value=bug, inline=True)
+    await ctx.respond("Bug reported", delete_after=5,)
     bugsChannelId = bot.get_guild(guildId).get_channel(getFromJson("bugsChannelId"))
     await bugsChannelId.send(embed=embed)
 
