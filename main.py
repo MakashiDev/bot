@@ -36,7 +36,6 @@ with open("server.json", "r") as f:
     carrothianRoleID = server["roles"]["carrothianRoleID"]
     doverianRoleID = server["roles"]["doverianRoleID"]
     skycliffRoleID = server["roles"]["skycliffRoleID"]
-    
 
 
 def getFromJson(index):
@@ -45,23 +44,21 @@ def getFromJson(index):
         return server[index]
     
 def setToJson(index, value):
-    with open("server.json", "w") as f:
+    with open("server.json", "r") as f:
         server = json.load(f)
-        server[index] = value
+
+    server[index] = value
+
+    with open("server.json", "w") as f:
         json.dump(server, f)
-
-
 
 
 @bot.event
 async def on_ready():
     print("Bot is ready")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the Kingdom of Doveria"))
-    logging.info("Bot is ready")
     await setUpTickets()
-
-
-
+    logging.info("Bot is ready")
 
 
 @bot.event
@@ -152,9 +149,13 @@ async def setUpTickets():
     # get the channel named tickets in the server
     server = bot.get_guild(guildId)
     ticketChannel = server.get_channel(ticketChannelId)
+    print(ticketChannel.name)
     ticketMessage = None
     try:
-        ticketMessage = await ticketChannel.fetch_message(getFromJson("ticketMsg"))
+        print(getFromJson("ticketMsg"))
+    
+        ticketMessage = await ticketChannel.fetch_message(1126302297538969650)
+        print("Ticket message found")
     except:
         print("Ticket message not found")
 
@@ -185,7 +186,7 @@ async def setUpTickets():
         await ticketMessage.edit(embed=embed, view=MyView())
     except:
         new_message = await ticketChannel.send(embed=embed, view=MyView())
-        server["ticketMsg"] = new_message.id
+        setToJson("ticketMsg", int(new_message.id))
         with open('server.json', 'w') as f:
             json.dump(server, f)
 
