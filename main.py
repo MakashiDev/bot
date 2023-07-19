@@ -169,8 +169,8 @@ async def setUpTickets():
     embed.add_field(name=":man_shrugging: Other",
                     value="Click the button below to create a other ticket", inline=False)
 
-    class MyView(discord.ui.View(timeout=None)):
-
+    class MyView(discord.ui.View):
+        super().__init__(timeout=None)
         @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
         async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Support", interaction)
