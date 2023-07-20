@@ -255,8 +255,7 @@ async def process(ctx, member: discord.Member):
 
     class MyView(discord.ui.View):
         def __init__(self):
-            super().__init__()
-            self.value = None
+            super().__init__(timeout=None)
 
         @discord.ui.select(placeholder="Admin please select the users town", options=options)
         async def select(self, select: discord.ui.Select, interaction: discord.Interaction):
