@@ -3,7 +3,7 @@ import logging
 import json
 
 # Set up logging
-#logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 
 token = ""
@@ -22,35 +22,45 @@ intents.guilds = True
 bot = discord.Bot(intents=intents)
 
 
-with open("server.json", "r") as f:
-    server = json.load(f)
-    global guildId, ticketChannelId, ticketLogChannelId, ticketCategory, carrothianLeaderID, doverianLeaderID, SkycliffLeaderID, supportRoleId, carrothianRoleID, doverianRoleID, SkycliffRoleID
-    guildId = server["guildId"]
-    ticketChannelId = server["ticketChannelId"]
-    ticketLogChannelId = server["ticketLogChannelId"]
-    ticketCategory = server["ticketCategory"]
-    carrothianLeaderID = server["leaders"]["carrothianLeaderID"]
-    doverianLeaderID = server["leaders"]["doverianLeaderID"]
-    SkycliffLeaderID = server["leaders"]["SkycliffLeaderID"]
-    supportRoleId = server["roles"]["supportRoleId"]
-    carrothianRoleID = server["roles"]["carrothianRoleID"]
-    doverianRoleID = server["roles"]["doverianRoleID"]
-    skycliffRoleID = server["roles"]["skycliffRoleID"]
-
-
-def getFromJson(index):
+def getFromJson(serverID, index, group=None):
     with open("server.json", "r") as f:
         server = json.load(f)
-        return server[index]
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == serverID:
+                if group == None:
+                    return i[index]
+                else:
+                    if group == "town":
+                        for x in i["towns"]:
+                            if x["name"] == index:
+                                return x
+                    elif group == "roles":
+                        return i["roles"][index]
+                    elif group == "channels":
+                        return i["channels"][index]
+
+        
     
-def setToJson(index, value):
+def setToJson(serverID, index, value, group=None):
     with open("server.json", "r") as f:
         server = json.load(f)
-
-    server[index] = value
-
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == serverID:
+                if group == None:
+                    i[index] = value
+                else:
+                    if group == "town":
+                        for x in i["towns"]:
+                            if x["name"] == index:
+                                x = value
+                    elif group == "roles":
+                        i["roles"][index] = value
+                    elif group == "channels":
+                        i["channels"][index] = value
     with open("server.json", "w") as f:
-        json.dump(server, f)
+        json.dump(server, f)    
 
 
 @bot.event
@@ -58,6 +68,7 @@ async def on_ready():
     print("Bot is ready")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the Kingdom of Doveria"))
     await setUpTickets()
+    # log with yellow text
     logging.info("Bot is ready")
 
 
@@ -69,11 +80,11 @@ async def on_command(ctx):
 
 async def createTicket(ticketType, interaction):
 
-    supportRole = interaction.guild.get_role(supportRoleId)
-    ticketLogChannel = interaction.guild.get_channel(ticketLogChannelId)
-    catergory = interaction.guild.get_channel(ticketCategory)
-    ticketCount = getFromJson("ticketCount") + 1
-    setToJson("ticketCount", ticketCount)
+    supportRole = interaction.guild.get_role(getFromJson(interaction.guild.id, "ticketMaster", "roles"))
+    ticketLogChannel = interaction.guild.get_channel(getFromJson(interaction.guild.id, "ticketLogChannelId", "channels"))
+    catergory = interaction.guild.get_channel(getFromJson(interaction.guild.id, "ticketCategory", "channels"))
+    ticketCount = getFromJson(interaction.guild.id, "ticketCount") + 1
+    setToJson(interaction.guild.id, "ticketCount", ticketCount)
     
 
     # Create the ticket channel
@@ -148,18 +159,7 @@ async def createTicket(ticketType, interaction):
 
 
 async def setUpTickets():
-    # get the channel named tickets in the server
-    server = bot.get_guild(guildId)
-    ticketChannel = server.get_channel(ticketChannelId)
-    print(ticketChannel.name)
-    ticketMessage = None
-    try:
-        print(getFromJson("ticketMsg"))
-    
-        ticketMessage = await ticketChannel.fetch_message(1126302297538969650)
-        print("Ticket message found")
-    except:
-        print("Ticket message not found")
+    # Varbibles 
 
     # Embed explaing how to create a ticket
     embed = discord.Embed(title="How to create a ticket",
@@ -185,14 +185,31 @@ async def setUpTickets():
         @discord.ui.button(label='Other', style=discord.ButtonStyle.grey, emoji="🤷‍♂️")
         async def other(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Other", interaction)
-    # Send the message
-    try:
-        await ticketMessage.edit(embed=embed, view=MyView())
-    except:
-        new_message = await ticketChannel.send(embed=embed, view=MyView())
-        setToJson("ticketMsg", int(new_message.id))
-        with open('server.json', 'w') as f:
-            json.dump(server, f)
+
+
+    # Setup all servers tickets
+    servers = []
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+
+    for server in servers:
+        ticketChannel = bot.get_channel(server["channels"]["ticketChannelId"])
+        guild = bot.get_guild(server["guildId"])
+        
+        ticketMessage = await ticketChannel.fetch_message(server["channels"]["ticketMsg"])
+
+        # Send the message
+        try:
+            await ticketMessage.edit(embed=embed, view=MyView())
+        except:
+            #purge the channel
+            await ticketChannel.purge(limit=100)
+
+            new_message = await ticketChannel.send(embed=embed, view=MyView())
+            setToJson(guild.id, "ticketMsg", new_message.id, "channels")
+            
+            
 
     # Send a log message
     logging.info("Ticket setup complete")
@@ -519,6 +536,428 @@ async def reportbug(ctx, command: str, bug: str):
     bugsChannelId = bot.get_guild(guildId).get_channel(getFromJson("bugsChannelId"))
     await bugsChannelId.send(embed=embed)
 
- 
+
+
+def addServerToJson(welcomeChannel, ticketChannel, ticketLogChannel, ticketCategory, ticketMasterRole, guildId, members, guildName):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                return "Already Set Up"
+        servers.append({
+            "guildId": guildId,
+            "guildName": guildName,
+            "members": members,
+            "channels": {
+                "welcomeChannelId": welcomeChannel,
+                "ticketChannelId": ticketChannel,
+                "ticketLogChannelId": ticketLogChannel,
+                "ticketCategory": ticketCategory,
+            },
+            "roles": {
+                "ticketMaster": ticketMasterRole,
+            }
+        })
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Server Added"
+
+#set up bot for server
+@bot.command(description="This command sets up the bot for the server", aliases=["setup"], pass_context=True, brief="Sets up the bot for the server", usage="setup")
+@discord.default_permissions(administrator=True)
+async def setup(ctx, welcomeChannel : discord.channel, ticketChannel : discord.channel, ticketLogChannel : discord.channel, ticketCategory : discord.channel, ticketMasterRole : discord.role):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # add server to json
+        jsonStuff = addServerToJson(welcomeChannel.id, ticketChannel.id, ticketLogChannel.id, ticketCategory.id, ticketMasterRole.id, ctx.guild.id, ctx.guild.member_count, ctx.guild.name)
+        if jsonStuff == "Already Set Up":
+            await ctx.respond("Server is already set up", ephemeral=True)
+            return
+        #fancy embed saying the bot is set up, and explaining how to add towns
+        embed = discord.Embed(title="Bot Setup", description="The bot has been set up", color=0x00a6ff)
+        embed.add_field(name="Adding Towns", value="To add towns to the bot use the command /addTown <town name> <town leader role>", inline=False)
+        embed.add_field(name="Example", value="/addTown Carrothia @Carrothian Leader", inline=False)
+        embed.add_field(name="Removing Towns", value="To remove towns from the bot use the command /removeTown <town name>", inline=False)
+        embed.add_field(name="Example", value="/removeTown Carrothia", inline=False)
+        # below is premium features make feild to tell users
+        embed.add_field(name="Premium Features", value="To get premium features please donate to the bot or send nitro to <@577985634359050251>", inline=False)
+        embed.add_field(name="Adding Town Roles", value="To add town roles to the bot use the command /addTownRole <town name> <town role>", inline=False)
+        embed.add_field(name="Example", value="/addTownRole Carrothia @Carrothian", inline=False)
+        embed.add_field(name="Removing Town Roles", value="To remove town roles from the bot use the command /removeTownRole <town name> <town role>", inline=False)
+        embed.add_field(name="Example", value="/removeTownRole Carrothia @Carrothian", inline=False)
+        embed.add_field(name="Adding Town Channels", value="To add town channels to the bot use the command /addTownChannel <town name> <town channel>", inline=False)
+        embed.add_field(name="Example", value="/addTownChannel Carrothia #carrothia", inline=False)
+        embed.add_field(name="Removing Town Channels", value="To remove town channels from the bot use the command /removeTownChannel <town name> <town channel>", inline=False)
+        embed.add_field(name="Example", value="/removeTownChannel Carrothia #carrothia", inline=False)
+
+        await ctx.respond(embed=embed)
+
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+def addTownToJson(townName, townLeaderRole, guildId, townRole=None, townChannel=None):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        return "Town already exists"
+                towns.append({
+                    "name": townName,
+                    "leader": townLeaderRole,
+                    "role": townRole,
+                    "channel": townChannel
+                })
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Town Added"
+
+# add town to bot
+@bot.command(description="This command adds a town to nation", aliases=["addTown"], pass_context=True, brief="Adds a town to the bot", usage="addTown")
+@discord.default_permissions(administrator=True)
+async def addtown(ctx, townName, townLeaderRole : discord.role):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # add town to json
+        jsonStuff = addTownToJson(townName, townLeaderRole.id, ctx.guild.id)
+        if jsonStuff == "Town already exists":
+            await ctx.respond("Town already exists", ephemeral=True)
+            return
+        # fancy embed saying the town was added
+        embed = discord.Embed(title="Town Added", description="Town has been added", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Leader Role", value=townLeaderRole.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+# remove town from json
+def removeTownFromJson(townName, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        towns.remove(i)
+                        return "Town Removed"
+    return "Town does not exist"
+
+    
+@bot.command(description="This command removes a town from nation", aliases=["removeTown"], pass_context=True, brief="Removes a town from the bot", usage="removeTown")
+@discord.default_permissions(administrator=True)
+async def removetown(ctx, townName):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # remove town from json
+        jsonStuff = removeTownFromJson(townName, ctx.guild.id)
+        if jsonStuff == "Town does not exist":
+            await ctx.respond("Town does not exist", ephemeral=True)
+            return
+        # fancy embed saying the town was removed
+        embed = discord.Embed(title="Town Removed", description="Town has been removed", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+#update town in json
+def updateTownInJson(townName, townLeaderRole, guildId, townRole=None, townChannel=None):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        i["leader"] = townLeaderRole
+                        i["role"] = townRole
+                        i["channel"] = townChannel
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Town Updated"
+
+# update town in bot
+@bot.command(description="This command updates a town in nation", aliases=["updateTown"], pass_context=True, brief="Updates a town in the bot", usage="updateTown")
+@discord.default_permissions(administrator=True)
+async def updatetown(ctx, townName, townLeaderRole : discord.role):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # update town in json
+        jsonStuff = updateTownInJson(townName, townLeaderRole.id, ctx.guild.id)
+        if jsonStuff == "Town does not exist":
+            await ctx.respond("Town does not exist", ephemeral=True)
+            return
+        # fancy embed saying the town was updated
+        embed = discord.Embed(title="Town Updated", description="Town has been updated", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Leader Role", value=townLeaderRole.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+
+# add town role to json
+def addTownRoleToJson(townName, townRole, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        townRoles = i["townRoles"]
+                        for i in townRoles:
+                            if i["townRole"] == townRole:
+                                return "Town Role already exists"
+                        townRoles.append({
+                            "townRole": townRole
+                        })
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Town Role Added"
+
+# add town role to bot
+@bot.command(description="This command adds a town role to a town", aliases=["addTownRole"], pass_context=True, brief="Adds a town role to the bot", usage="addTownRole")
+@discord.default_permissions(administrator=True)
+async def addtownrole(ctx, townName, townRole : discord.role):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # add town role to json
+        jsonStuff = addTownRoleToJson(townName, townRole.id, ctx.guild.id)
+        if jsonStuff == "Town Role already exists":
+            await ctx.respond("Town Role already exists", ephemeral=True)
+            return
+        # fancy embed saying the town role was added
+        embed = discord.Embed(title="Town Role Added", description="Town Role has been added", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Role", value=townRole.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+
+# remove town role from json
+def removeTownRoleFromJson(townName, townRole, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        townRoles = i["townRoles"]
+                        for i in townRoles:
+                            if i["townRole"] == townRole:
+                                townRoles.remove(i)
+                                return "Town Role Removed"
+    return "Town Role does not exist"
+
+# remove town role from bot
+@bot.command(description="This command removes a town role from a town", aliases=["removeTownRole"], pass_context=True, brief="Removes a town role from the bot", usage="removeTownRole")
+@discord.default_permissions(administrator=True)
+async def removetownrole(ctx, townName, townRole : discord.role):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # remove town role from json
+        jsonStuff = removeTownRoleFromJson(townName, townRole.id, ctx.guild.id)
+        if jsonStuff == "Town Role does not exist":
+            await ctx.respond("Town Role does not exist", ephemeral=True)
+            return
+        # fancy embed saying the town role was removed
+        embed = discord.Embed(title="Town Role Removed", description="Town Role has been removed", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Role", value=townRole.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+# update town role in json
+def updateTownRoleInJson(townName, townRole, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        townRoles = i["townRoles"]
+                        for i in townRoles:
+                            if i["townRole"] == townRole:
+                                i["townRole"] = townRole
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Town Role Updated"
+
+# update town role in bot
+@bot.command(description="This command updates a town role in a town", aliases=["updateTownRole"], pass_context=True, brief="Updates a town role in the bot", usage="updateTownRole")
+@discord.default_permissions(administrator=True)
+async def updatetownrole(ctx, townName, townRole : discord.role):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        # update town role in json
+        jsonStuff = updateTownRoleInJson(townName, townRole.id, ctx.guild.id)
+        if jsonStuff == "Town Role does not exist":
+            await ctx.respond("Town Role does not exist", ephemeral=True)
+            return
+        # fancy embed saying the town role was updated
+        embed = discord.Embed(title="Town Role Updated", description="Town Role has been updated", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Role", value=townRole.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+# all town channel stuff
+
+# add town channel to json
+def addTownChannelToJson(townName, townChannel, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        townChannels = i["townChannels"]
+                        for i in townChannels:
+                            if i["townChannel"] == townChannel:
+                                return "Town Channel already exists"
+                        townChannels.append({
+                            "townChannel": townChannel
+                        })
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Town Channel Added"
+
+# add town channel to bot
+@bot.command(description="This command adds a town channel to a town", aliases=["addTownChannel"], pass_context=True, brief="Adds a town channel to the bot", usage="addTownChannel")
+@discord.default_permissions(administrator=True)
+async def addtownchannel(ctx, townName, townChannel : discord.channel):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+        
+        # add town channel to json
+        jsonStuff = addTownChannelToJson(townName, townChannel.id, ctx.guild.id)
+        if jsonStuff == "Town Channel already exists":
+            await ctx.respond("Town Channel already exists", ephemeral=True)
+            return
+        # fancy embed saying the town channel was added
+        embed = discord.Embed(title="Town Channel Added", description="Town Channel has been added", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Channel", value=townChannel.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+# remove town channel from json
+def removeTownChannelFromJson(townName, townChannel, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        townChannels = i["townChannels"]
+                        for i in townChannels:
+                            if i["townChannel"] == townChannel:
+                                townChannels.remove(i)
+                                return "Town Channel Removed"
+    return "Town Channel does not exist"
+
+# remove town channel from bot
+@bot.command(description="This command removes a town channel from a town", aliases=["removeTownChannel"], pass_context=True, brief="Removes a town channel from the bot", usage="removeTownChannel")
+@discord.default_permissions(administrator=True)
+async def removetownchannel(ctx, townName, townChannel : discord.channel):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+
+        # remove town channel from json
+        jsonStuff = removeTownChannelFromJson(townName, townChannel.id, ctx.guild.id)
+        if jsonStuff == "Town Channel does not exist":
+            await ctx.respond("Town Channel does not exist", ephemeral=True)
+            return
+        # fancy embed saying the town channel was removed
+        embed = discord.Embed(title="Town Channel Removed", description="Town Channel has been removed", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Channel", value=townChannel.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+# update town channel in json
+def updateTownChannelInJson(townName, townChannel, guildId):
+    with open("server.json", "r") as f:
+        server = json.load(f)
+        servers = server["servers"]
+        for i in servers:
+            if i["guildId"] == guildId:
+                towns = i["towns"]
+                for i in towns:
+                    if i["townName"] == townName:
+                        townChannels = i["townChannels"]
+                        for i in townChannels:
+                            if i["townChannel"] == townChannel:
+                                i["townChannel"] = townChannel
+    with open("server.json", "w") as f:
+        json.dump(server, f)
+    return "Town Channel Updated"
+
+# update town channel in bot
+@bot.command(description="This command updates a town channel in a town", aliases=["updateTownChannel"], pass_context=True, brief="Updates a town channel in the bot", usage="updateTownChannel")
+@discord.default_permissions(administrator=True)
+async def updatetownchannel(ctx, townName, townChannel : discord.channel):
+    if ctx.author.guild_permissions.administrator:
+        logging.info(
+            f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+
+        # update town channel in json
+        jsonStuff = updateTownChannelInJson(townName, townChannel.id, ctx.guild.id)
+        if jsonStuff == "Town Channel does not exist":
+            await ctx.respond("Town Channel does not exist", ephemeral=True)
+            return
+        # fancy embed saying the town channel was updated
+        embed = discord.Embed(title="Town Channel Updated", description="Town Channel has been updated", color=0x00a6ff)
+        embed.add_field(name="Town Name", value=townName, inline=False)
+        embed.add_field(name="Town Channel", value=townChannel.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    
+
+
+
+
 # Run the bot
 bot.run(token)
