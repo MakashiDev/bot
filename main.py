@@ -87,6 +87,8 @@ async def createTicket(ticketType, interaction):
     # give the bot access to the channel
     await ticketChannel.set_permissions(bot.user, read_messages=True, send_messages=True, manage_messages=True, view_channel=True, embed_links=True, attach_files=True, read_message_history=True, external_emojis=True, add_reactions=True, manage_channels=True)
     # Now send a embed welcoming the user to the channel
+    
+    await interaction.response.send_message("Ticket is created" + ticketChannel.mention, ephemeral=True, delete_after=15)
 
     embed = discord.Embed(title="Welcome to your " + ticketType + " ticket",
                           description="Please follow the format below for explaining your issue.", color=0x00a6ff)
@@ -135,7 +137,7 @@ async def createTicket(ticketType, interaction):
             # delete the channel
             await ticketChannel.delete()
 
-    await interaction.response.send_message("Ticket is created" + ticketChannel.mention, ephemeral=True)
+    
     await ticketChannel.send(embed=embed, view=MyView())
     await ticketLogChannel.send(f" The ticket `{ticketChannel.name}` has been created by {interaction.user.mention}")
 
@@ -170,7 +172,7 @@ async def setUpTickets():
                     value="Click the button below to create a other ticket", inline=False)
 
     class MyView(discord.ui.View):
-        def __int__(self):
+        def __init__(self):
             super().__init__(timeout=None)
         @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
         async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -471,6 +473,7 @@ async def ban(ctx, member: discord.Member, reason=None):
         embed.add_field(name="Reason", value=reason, inline=False)
         embed.add_field(name="Banned by", value=ctx.author.mention, inline=False)
         await ctx.respond(embed=embed)
+        
     else:
         await ctx.respond("You do not have permission to use this command", ephemeral=True)
         return
