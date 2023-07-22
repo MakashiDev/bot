@@ -14,11 +14,15 @@ class Agent:
 
     def get_server_by_guild_id(self, guild_id):
         with open(self.filename, "r") as f:
-            server = json.load(f)
-            servers = server["servers"]
-            for s in servers:
-                if s["guildId"] == guild_id:
-                    return s
+            data = json.load(f)
+            servers = data.get("servers", [])
+            i = 0
+            for server in servers:
+                if server["guildId"] == guild_id:
+                    # reutn server index
+                    return i
+                i += 1
+
         return None
 
     def get_from_json(self, server_id, index, group=None):
@@ -201,6 +205,8 @@ class Agent:
         with open(self.filename, "w") as f:
             json.dump(server, f)
         return "Town Channel Removed"
+    
+
     def add_member_to_town(self, town_name, member, guild_id):
         server = self.get_server_by_guild_id(guild_id)
         if not server:
@@ -222,6 +228,9 @@ class Agent:
         with open(self.filename, "w") as f:
             json.dump(server, f)
         return "Member Added"
+    
+
+
     def remove_member_from_town(self, town_name, member, guild_id):
         server = self.get_server_by_guild_id(guild_id)
         if not server:
