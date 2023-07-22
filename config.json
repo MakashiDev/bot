@@ -1,42 +1,25 @@
 {
-	"servers": [
+	"guildId": 771773406144233514,
+	"guildName": "Makashi's Bot Testing Server",
+	"members": 15,
+	"channels": {
+		"welcomeChannelId": 781246300506030110,
+		"ticketChannelId": 1131817108758614016,
+		"ticketLogChannelId": 1131817179218718811,
+		"ticketCategory": 1131817222990483466,
+		"announcementChannelId": 771773406144233517,
+		"generalChannelId": 925539307505205279,
+		"ticketMsg": 1132170264029962363
+	},
+	"roles": { "ticketMaster": 771774031770550282 },
+	"towns": [
 		{
-			"guildId": 1091499066887770213,
-			"guildName": "Doverian Imperium",
-			"members": 0,
-			"premium": true,
-			"channels": {
-				"welcomeChannelId": 1122027613070831687,
-				"ticketChannelId": 1125123275832434778,
-				"ticketLogChannelId": 1122047542654414888,
-				"ticketCategory": 1125927939066826822,
-				"ticketMsg": 1126302297538969650,
-				"bugsChannelId": 1131019420890828820
-			},
-			"roles": {
-				"ticketMaster": 1122050028186370068
-			},
-			"town": [
-				{
-					"name": "Carrothia",
-					"leader": "577985634359050251",
-					"role": "1125921447760646216",
-					"channel": null
-				},
-				{
-					"name": "Doveria",
-					"leader": "978981126544691210",
-					"role": "1125921790301048925",
-					"channel": null
-				},
-				{
-					"name": "Skycliff",
-					"leader": "1012918078318846043",
-					"role": "1129135953294930088",
-					"channel": null
-				}
-			],
-			"ticketCount": 39
+			"name": "Doveria",
+			"leader": 577985634359050251,
+			"role": null,
+			"channel": null,
+			"members": []
 		}
-	]
+	],
+	"ticketCount": 0
 }
