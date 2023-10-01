@@ -46,7 +46,7 @@ class Guilds:
         """
         Parameters
         ----------
-        data : dict
+        data: list
             The data to update the config.json file with.
         """
         self.data = data
@@ -70,7 +70,7 @@ class Guilds:
         """
         return self.data
 
-    def new(self, guildId, guildName, members, channels, roles, towns):
+    def new(self, guildId, guildName, members, channels, roles):
         """
         Parameters
         ----------
@@ -113,6 +113,24 @@ class Guilds:
                 return i
         return None
     
+    def update_guild(self, id, guild):
+        """
+        Parameters
+        ----------
+        id : int
+            The id of the guild.
+        guild : object
+            The guild object.
+        
+        Updates the guild in the config.json file.
+        """
+        data = self.get_data()
+        for server in data:
+            if server["guildId"] == id:
+                server = guild
+                break
+        self.update_data(data)
+    
     
 
 class Guild:
@@ -125,7 +143,7 @@ class Guild:
         ----------
         guildIndex : int
             The index of the guild in the config.json file.
-        data : dict
+        data: list
             The data to update the config.json file with.
         """
         self.guildIndex = guildIndex
@@ -139,19 +157,19 @@ class Guild:
         """
         Initializes the guild by loading the config.json file.
         """
-        self.guild = self.data[str(self.guildIndex)]
+        self.guild = self.data[self.guildIndex]
     
     
     def update_data(self, data):
         """
         Parameters
         ----------
-        data : dict
+        data: list
             The data to update the config.json file with.
         """
-        self.data[str(self.guildIndex)] = data
+        self.data[self.guildIndex] = data
         with open("config.json", "w") as f:
-            json.dump(data, f)
+            json.dump(self.data, f)
     
     
     def get_data(self):
@@ -238,18 +256,29 @@ class Guild:
                 break
         self.update_data(data)
 
-    def remove_member(self, townIndex, memberID):
+    def remove_member(self, town_name, memberID):
         """
         Parameters
         ----------
-        townIndex : int
-            The index of the town in the towns list.
+        town_name : str
+            The name of the town to remove the member from.
         memberID : int
             The id of the member to remove.
+        
+        Removes a member from a town.
         """
         data = self.get_data()
-        data["towns"][townIndex]["members"].remove(memberID)
-        self.update_data(data)
+        for i in range(len(data["towns"])):
+            if data["towns"][i]["name"] == town_name:
+                for j in range(len(data["towns"][i]["members"])):
+                    if data["towns"][i]["members"][j]["id"] == memberID:
+                        data["towns"][i]["members"].pop(j)
+                        break
+                break
+        self.update_data(data) 
+    
+
+        
 
     def get_role(self, role_name):
         """
@@ -287,7 +316,7 @@ class Guild:
         int
             The number of tickets in the guild.
         """
-        return len(self.guild["ticketCount"])
+        return self.guild["ticketCount"]
     
     def set_ticket_count(self, count):
         """
@@ -308,6 +337,19 @@ class Guild:
             The towns in the guild.
         """
         return self.guild["towns"]
+    
+    def set_ticket_msg(self, messageID):
+        """
+        Parameters
+        ----------
+        messageID : int
+            The id of the message.
+
+        Sets the ticket message id.
+        """
+        data = self.get_data()
+        data["ticketMsg"] = messageID
+        self.update_data(data)
     
 
 

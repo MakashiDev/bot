@@ -239,15 +239,22 @@ async def setUpTickets():
     # Setup all servers tickets
     servers = guilds.get_guilds()
 
-    for i in len(servers):
-       print(i)
-       guild = guilds.get_guild(i)
-
-
-       ticketChannel = bot.get_guild(guild.get_data()["guildId"]).get_channel(guild.get_channel("ticket"))
-       ticketChannel.send(embed=embed, view=MyView())
-
-            
+    # Loop through all servers
+    for server in servers:
+        # Get the server
+        guild = bot.get_guild(server["guildId"])
+        # Get the ticket channel
+        print(server["channels"]["ticket"])
+        ticketChannel = guild.get_channel(server["channels"]["ticket"])  
+        try:
+            message = await ticketChannel.fetch_message(server["ticketMsg"])
+            await message.edit(embed=embed, view=MyView())
+        except:
+            message = await ticketChannel.send(embed=embed, view=MyView())
+            await message.pin()
+            await ticketChannel.last_message.delete()
+            server["ticketMsg"] = message.id
+            guilds.update_guild(server["guildId"], server)
 
     # Send a log message
     logging.info("Ticket setup complete")
@@ -456,7 +463,7 @@ async def ban(ctx, member: discord.Member, reason=None):
         logging.info(
             f"User: {ctx.author.name}#{ctx.author.discriminator} | Banned User: {member.name}#{member.discriminator}, Reason: {reason}")
         await member.ban(reason=reason)
-        if reason == "Treason":
+        if reason.lower() == "treason":
             embed = discord.Embed(title="Treason", description="User kicked for treason", color=0x00a6ff)
             embed.add_field(name="User", value=member.mention, inline=False)
             embed.add_field(name="Reason", value="This person has been found guilty of Treason", inline=False)
@@ -464,11 +471,14 @@ async def ban(ctx, member: discord.Member, reason=None):
             await ctx.respond(embed=embed)
             return
         # fancy embed saying who was banned, reason, and who banned them
-        embed = discord.Embed(title="Ban", description="User banned", color=0x00a6ff)
+        embed = discord.Embed(title="Ban", description="User banned", color=0xff0000)
         embed.add_field(name="User", value=member.mention, inline=False)
         embed.add_field(name="Reason", value=reason, inline=False)
         embed.add_field(name="Banned by", value=ctx.author.mention, inline=False)
+        # set image to the banned users avatar
+        embed.set_image(url="https://cdn.discordapp.com/attachments/1091499067428831243/1158169369277382667/7FCA4A69-D4D8-4862-AB3F-685CC7BDB766.jpg?ex=651b44c7&is=6519f347&hm=c9202e9492f08ec39281ff619ee2c793c7ca6b6ece3ee59f68b30f555699ff8a&")
         await ctx.respond(embed=embed)
+        
         
     else:
         await ctx.respond("You do not have permission to use this command", ephemeral=True)
@@ -589,7 +599,13 @@ async def setup(ctx, welcomechannel: discord.TextChannel, announcementchannel: d
                 async def other(self, button: discord.ui.Button, interaction: discord.Interaction):
                     await createTicket("Other", interaction)
             ticketMsg = await ticketchannel.send(embed=embed, view=MyView())
-            setToJson(ctx.guild.id, "ticketMsg", ticketMsg.id, "channels")
+            guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+            guild.set_ticket_msg(ticketMsg.id)
+            guild.set_ticket_count(0)
+
+            await ticketMsg.pin()
+            await ticketchannel.last_message.delete()
+
 
         else:
             await ctx.respond(jsonStuff)
