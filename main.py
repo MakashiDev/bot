@@ -1,9 +1,9 @@
 import discord  # py-cord
 import logging
 import json
-from agent import Agent
+from guilds import Guilds
 
-agent = Agent()
+guilds = Guilds()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -124,11 +124,16 @@ async def on_command(ctx):
 
 async def createTicket(ticketType, interaction):
 
-    supportRole = interaction.guild.get_role(getFromJson(interaction.guild.id, "ticketMaster", "roles"))
-    ticketLogChannel = interaction.guild.get_channel(getFromJson(interaction.guild.id, "ticketLogChannelId", "channels"))
-    catergory = interaction.guild.get_channel(getFromJson(interaction.guild.id, "ticketCategory", "channels"))
-    ticketCount = getFromJson(interaction.guild.id, "ticketCount") + 1
-    setToJson(interaction.guild.id, "ticketCount", ticketCount)
+    guildIndex = guilds.get_guild_index(interaction.guild.id)
+    guild = guilds.get_guild(guildIndex)
+
+    supportRole = interaction.guild.get_role(guild.get_role("ticket"))
+    ticketLogChannel = interaction.guild.get_channel(guild.get_channel("ticketLogs"))
+    catergory = interaction.guild.get_channel(guild.get_channel("ticketCat"))
+    ticketCount = guild.get_ticket_count() + 1
+
+    guild.set_ticket_count(ticketCount)
+
     
 
     # Create the ticket channel
@@ -232,27 +237,16 @@ async def setUpTickets():
 
 
     # Setup all servers tickets
-    servers = []
-    with open("config.json", "r") as f:
-        server = json.load(f)
-        servers = server["servers"]
+    servers = guilds.get_guilds()
 
-    for server in servers:
-        ticketChannel = bot.get_channel(server["channels"]["ticketChannelId"])
-        guild = bot.get_guild(server["guildId"])
-        
+    for i in len(servers):
+       print(i)
+       guild = guilds.get_guild(i)
 
-        # Send the message
-        try:
-            ticketMessage = await ticketChannel.fetch_message(server["channels"]["ticketMsg"])
-            await ticketMessage.edit(embed=embed, view=MyView())
-        except:
-            #purge the channel
-            await ticketChannel.purge(limit=100)
 
-            new_message = await ticketChannel.send(embed=embed, view=MyView())
-            setToJson(guild.id, "ticketMsg", new_message.id, "channels")
-            
+       ticketChannel = bot.get_guild(guild.get_data()["guildId"]).get_channel(guild.get_channel("ticket"))
+       ticketChannel.send(embed=embed, view=MyView())
+
             
 
     # Send a log message
@@ -261,13 +255,15 @@ async def setUpTickets():
 
 @bot.event
 async def on_member_join(member):
+
     displayName = member.display_name
     mention = member.mention
     server = member.guild
-    welcomechannel = server.get_channel(getFromJson(server.id, "welcomeChannelId", "channels"))
-    announcementchannel = server.get_channel(getFromJson(server.id, "announcementChannelId", "channels"))
-    generalchannel = server.get_channel(getFromJson(server.id, "generalChannelId", "channels"))
-    ticketchannel = server.get_channel(getFromJson(server.id, "ticketChannelId", "channels"))
+    guild = guilds.get_guild(guilds.get_guild_index(server.id))
+    welcomechannel = server.get_channel(guild.get_channel("welcome"))
+    announcementchannel = server.get_channel(guild.get_channel("announcements"))
+    generalchannel = server.get_channel(guild.get_channel("general"))
+    ticketchannel = server.get_channel(guild.get_channel("ticket"))
     
 
     embed = discord.Embed(title="Welcome " + displayName + f"to {server.name}'s Discord Server",
@@ -309,8 +305,8 @@ async def welcome(ctx, member: discord.Member):
     administrator=True
 )
 async def process(ctx, member: discord.Member):
-    guild = ctx.guild
-    towns = getFromJson(guild.id, "towns")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    towns = guild.get_towns()
     options = []
 
 
@@ -371,8 +367,8 @@ async def process(ctx, member: discord.Member):
 )
 async def accept(ctx, member: discord.Member):
     leaders = []
-    guild = ctx.guild
-    towns = getFromJson(guild.id, "towns")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    towns = guild.get_towns()
     for town in towns:
         leaders.append(town["leader"])
     if ctx.author.id in leaders:
@@ -381,10 +377,7 @@ async def accept(ctx, member: discord.Member):
                 role = guild.get_role(town["role"])
                 if role != None:
                     await member.add_roles(role)
-                jsonStuff = agent.add_member_to_town(member, town["name"], guild.id)
-                if jsonStuff != "Member added":
-                    await ctx.respond(jsonStuff)
-                    return
+                guild.add_new_member(town["name"], member.name, member.id)
                 embed = discord.Embed(title="Join Request Accepted", description="Join Request Accepted", color=0x00a6ff)
                 embed.add_field(name="User", value=member.mention, inline=False)
                 embed.add_field(name="Town", value=town["name"], inline=False)
@@ -409,8 +402,8 @@ async def accept(ctx, member: discord.Member):
 )
 async def deny(ctx, member: discord.Member, reason=None):
     leaders = []
-    guild = ctx.guild
-    towns = getFromJson(guild.id, "towns")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    towns = guild.get_towns()
     for town in towns:
         leaders.append(town["leader"])
     if ctx.author.id in leaders:
@@ -512,6 +505,8 @@ async def kick(ctx, member: discord.Member, reason=None):
 
 @bot.command(description="This command reports a bug", aliases=["reportBug"], pass_context=True, brief="Reports a bug", usage="reportBug")
 async def reportbug(ctx, command: str, bug: str):
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+
     logging.info(
         f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
     if str(ctx.guild.id) != "1091499066887770213":
@@ -522,7 +517,7 @@ async def reportbug(ctx, command: str, bug: str):
     embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar)
     embed.add_field(name=command, value=bug, inline=True)
     await ctx.respond("Bug reported", delete_after=5,)
-    bugsChannelId = ctx.guild.get_channel(1131019420890828820)
+    bugsChannelId = ctx.guild.get_channel(guild.get_channel("bugs"))
     await bugsChannelId.send(embed=embed)
 
 
@@ -533,10 +528,24 @@ async def setup(ctx, welcomechannel: discord.TextChannel, announcementchannel: d
     if ctx.author.guild_permissions.administrator:
         logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
         # Add server to json
-        jsonStuff = agent.add_server_to_json(
+        """  jsonStuff = agent.add_server_to_json(
             welcomechannel.id, announcementchannel.id, generalchannel.id, ticketchannel.id, ticketlogchannel.id, ticketcategory.id, ticketmasterrole.id,
             ctx.guild.id, ctx.guild.member_count, ctx.guild.name
-        )
+        ) """
+        channels= {
+            "welcome": welcomechannel.id,
+            "announcements": announcementchannel.id,
+            "general": generalchannel.id,
+            "ticket": ticketchannel.id,
+            "ticketLogs": ticketlogchannel.id,
+            "ticketCat": ticketcategory.id
+        }
+        roles = {
+            "ticket": ticketmasterrole.id
+        }
+        guilds.new(ctx.guild.id, ctx.guild.name, ctx.guild.member_count , channels, roles)
+        jsonStuff = "Server Added"
+
         if jsonStuff == "Server Added":
             # fancy embed saying server was added
             embed = discord.Embed(title="Server Added", description="Server Added", color=0x00a6ff)
@@ -591,7 +600,10 @@ async def setup(ctx, welcomechannel: discord.TextChannel, announcementchannel: d
 @discord.default_permissions(administrator=True)
 async def addtown(ctx, town_name, town_leader: discord.Member, town_role: discord.Role = None, town_channel: discord.TextChannel = None):
     logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.add_town_to_json(town_name, town_leader.id, ctx.guild.id, town_role.id if town_role else None, town_channel.id if town_channel else None)
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    """ response = agent.add_town_to_json(town_name, town_leader.id, ctx.guild.id, town_role.id if town_role else None, town_channel.id if town_channel else None) """
+    guild.add_new_town(town_name, town_leader.id, town_role.id if town_role else None, town_channel.id if town_channel else None)
+    response = "Town Added"
     if response == "Town Added":
         # fancy embed saying town was added
         embed = discord.Embed(title="Town Added", description="Town Added", color=0x00a6ff)
@@ -608,7 +620,9 @@ async def addtown(ctx, town_name, town_leader: discord.Member, town_role: discor
 @discord.default_permissions(administrator=True)
 async def removetown(ctx, town_name):
     logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.remove_town_from_json(town_name, ctx.guild.id)
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.remove_town(town_name)
+    response = "Town Removed"
     if response == "Town Removed":
         # fancy embed saying town was removed
         embed = discord.Embed(title="Town Removed", description="Town Removed", color=0x00a6ff)
@@ -623,7 +637,8 @@ async def removetown(ctx, town_name):
 @discord.default_permissions(administrator=True)
 async def updatetown(ctx, town_name, town_leader: discord.Member, town_role: discord.Role = None, town_channel: discord.TextChannel = None):
     logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.update_town_in_json(town_name, town_leader.id, ctx.guild.id, town_role.id if town_role else None, town_channel.id if town_channel else None)
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    response = "Town Updated"
     if response == "Town Updated":
         # fancy embed saying town was updated
         embed = discord.Embed(title="Town Updated", description="Town Updated", color=0x00a6ff)
@@ -638,73 +653,14 @@ async def updatetown(ctx, town_name, town_leader: discord.Member, town_role: dis
 
 
 
-@bot.command(description="Adds a role to a town", brief="Adds a role to a town", usage="addtownrole <town_name> <town_role>")
-@discord.default_permissions(administrator=True)
-async def addtownrole(ctx, town_name, town_role: discord.Role):
-    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.add_town_role_to_json(town_name, town_role.id, ctx.guild.id)
-    if response == "Town Role Added":
-        # fancy embed saying town role was added
-        embed = discord.Embed(title="Town Role Added", description="Town Role Added", color=0x00a6ff)
-        embed.add_field(name="Town", value=town_name, inline=False)
-        embed.add_field(name="Role", value=town_role.mention, inline=False)
-        embed.add_field(name="Added by", value=ctx.author.mention, inline=False)
-        await ctx.respond(embed=embed)
-    else:
-        await ctx.respond(response)
-
-
-@bot.command(description="Removes a role from a town", brief="Removes a role from a town", usage="removetownrole <town_name> <town_role>")
-@discord.default_permissions(administrator=True)
-async def removetownrole(ctx, town_name, town_role: discord.Role):
-    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.remove_town_role_from_json(town_name, town_role.id, ctx.guild.id)
-    if response == "Town Role Removed":
-        # fancy embed saying town role was removed
-        embed = discord.Embed(title="Town Role Removed", description="Town Role Removed", color=0x00a6ff)
-        embed.add_field(name="Town", value=town_name, inline=False)
-        embed.add_field(name="Role", value=town_role.mention, inline=False)
-        embed.add_field(name="Removed by", value=ctx.author.mention, inline=False)
-        await ctx.respond(embed=embed)
-    else:
-        await ctx.respond(response)
-
-@bot.command(description="Adds a channel to a town", brief="Adds a channel to a town", usage="addtownchannel <town_name> <town_channel>")
-@discord.default_permissions(administrator=True)
-async def addtownchannel(ctx, town_name, town_channel: discord.TextChannel):
-    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.add_town_channel_to_json(town_name, town_channel.id, ctx.guild.id)
-    if response == "Town Channel Added":
-        # fancy embed saying town channel was added
-        embed = discord.Embed(title="Town Channel Added", description="Town Channel Added", color=0x00a6ff)
-        embed.add_field(name="Town", value=town_name, inline=False)
-        embed.add_field(name="Channel", value=f"<#{town_channel.id}>", inline=False)
-        embed.add_field(name="Added by", value=ctx.author.mention, inline=False)
-        await ctx.respond(embed=embed)
-    else:
-        await ctx.respond(response)
-
-@bot.command(description="Removes a channel from a town", brief="Removes a channel from a town", usage="removetownchannel <town_name> <town_channel>")
-@discord.default_permissions(administrator=True)
-async def removetownchannel(ctx, town_name, town_channel: discord.TextChannel):
-    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.remove_town_channel_from_json(town_name, town_channel.id, ctx.guild.id)
-    if response == "Town Channel Removed":
-        # fancy embed saying town channel was removed
-        embed = discord.Embed(title="Town Channel Removed", description="Town Channel Removed", color=0x00a6ff)
-        embed.add_field(name="Town", value=town_name, inline=False)
-        embed.add_field(name="Channel", value=f"<#{town_channel.id}>", inline=False)
-        embed.add_field(name="Removed by", value=ctx.author.mention, inline=False)
-        await ctx.respond(embed=embed)
-    else:
-        await ctx.respond(response)
-
 # add users to towns
 @bot.command(description="Adds a user to a town", brief="Adds a user to a town", usage="addusertotown <user> <town_name>")
 @discord.default_permissions(administrator=True)
 async def addusertotown(ctx, member: discord.Member, town_name):
     logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.add_member_to_town(member, town_name, ctx.guild.id)
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.add_new_member(town_name, member.name, member.id)
+    response = "Member Added"
     if response == "Member Added":
         # fancy embed saying member was added
         embed = discord.Embed(title="Member Added", description="Member Added", color=0x00a6ff)
@@ -721,7 +677,9 @@ async def addusertotown(ctx, member: discord.Member, town_name):
 @discord.default_permissions(administrator=True)
 async def removeuserfromtown(ctx, member: discord.Member, town_name):
     logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-    response = agent.remove_member_from_town(member, town_name, ctx.guild.id)
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.remove_member(town_name, member.id)
+    response = "Member Removed"
     if response == "Member Removed":
         # fancy embed saying member was removed
         embed = discord.Embed(title="Member Removed", description="Member Removed", color=0x00a6ff)

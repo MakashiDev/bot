@@ -1,1 +1,31 @@
-{"guildId": 771773406144233514, "guildName": "Makashi's Bot Testing Server", "members": 15, "channels": {"welcomeChannelId": 781246300506030110, "ticketChannelId": 1131817108758614016, "ticketLogChannelId": 1131817179218718811, "ticketCategory": 1131817222990483466, "announcementChannelId": 771773406144233517, "generalChannelId": 925539307505205279, "ticketMsg": 1132170264029962363}, "roles": {"ticketMaster": 771774031770550282}, "towns": [], "ticketCount": 0}
+[
+	{
+		"guildId": 771773406144233514,
+		"guildName": "Makashi's Bot Testing Server",
+		"members": 15,
+		"channels": {
+			"welcome": 781246300506030110,
+			"ticket": 1131817108758614016,
+			"ticketLogs": 1131817179218718811,
+			"ticketCat": 1131817222990483466,
+			"announcements": 771773406144233517,
+			"general": 925539307505205279
+		},
+		"ticketMsg": 1132170264029962363,
+		"roles": { "ticket": 771774031770550282 },
+		"towns": [
+			{
+				"name": "Town 1",
+				"ownerID": "1131817108758614016",
+				"members": [
+					{
+						"username": "Makashi",
+						"id": "1131817108758614016"
+					}
+				]
+			}
+		],
+
+		"ticketCount": 0
+	}
+]
