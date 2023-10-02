@@ -2553,3 +2553,5 @@ env/lib/python3.9/site-packages/rubicon_objc-0.4.6.dist-info/WHEEL
 env/lib/python3.9/site-packages/xpc/__init__.py
 env/lib/python3.9/site-packages/xpc/_metadata.py
 env/lib/python3.9/site-packages/xpc/_xpc.cpython-39-darwin.so
+
+__pycache__/

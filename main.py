@@ -706,6 +706,102 @@ async def removeuserfromtown(ctx, member: discord.Member, town_name):
     else:
         await ctx.respond(response)
     
+@bot.command(description="Adds a role to a town", brief="Adds a role to a town", usage="addtownrole <town_name> <town_role>")
+@discord.default_permissions(administrator=True)
+async def addtownrole(ctx, town_name, town_role: discord.Role):
+    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.add_role_to_town(town_name, town_role.id)
+    response = "Role Added"
+    if response == "Role Added":
+        # fancy embed saying role was added
+        embed = discord.Embed(title="Role Added", description="Role Added", color=0x00a6ff)
+        embed.add_field(name="Town", value=town_name, inline=False)
+        embed.add_field(name="Role", value=town_role.mention, inline=False)
+        embed.add_field(name="Added by", value=ctx.author.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond(response)
+
+@bot.command(description="Removes a role from a town", brief="Removes a role from a town", usage="removetownrole <town_name> <town_role>")
+@discord.default_permissions(administrator=True)
+async def removetownrole(ctx, town_name, town_role: discord.Role):
+    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.remove_role_from_town(town_name, town_role.id)
+    response = "Role Removed"
+    if response == "Role Removed":
+        # fancy embed saying role was removed
+        embed = discord.Embed(title="Role Removed", description="Role Removed", color=0x00a6ff)
+        embed.add_field(name="Town", value=town_name, inline=False)
+        embed.add_field(name="Role", value=town_role.mention, inline=False)
+        embed.add_field(name="Removed by", value=ctx.author.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond(response)
+
+
+@bot.command(description="Adds a channel to a town", brief="Adds a channel to a town", usage="addtownchannel <town_name> <town_channel>")
+@discord.default_permissions(administrator=True)
+async def addtownchannel(ctx, town_name, town_channel: discord.TextChannel):
+    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.add_channel_to_town(town_name, town_channel.id)
+    response = "Channel Added"
+    if response == "Channel Added":
+        # fancy embed saying channel was added
+        embed = discord.Embed(title="Channel Added", description="Channel Added", color=0x00a6ff)
+        embed.add_field(name="Town", value=town_name, inline=False)
+        embed.add_field(name="Channel", value=f"<#{town_channel.id}>", inline=False)
+        embed.add_field(name="Added by", value=ctx.author.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond(response)
+    
+@bot.command(description="Removes a channel from a town", brief="Removes a channel from a town", usage="removetownchannel <town_name> <town_channel>")
+@discord.default_permissions(administrator=True)
+async def removetownchannel(ctx, town_name, town_channel: discord.TextChannel):
+    logging.info(f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    guild.remove_channel_from_town(town_name, town_channel.id)
+    response = "Channel Removed"
+    if response == "Channel Removed":
+        # fancy embed saying channel was removed
+        embed = discord.Embed(title="Channel Removed", description="Channel Removed", color=0x00a6ff)
+        embed.add_field(name="Town", value=town_name, inline=False)
+        embed.add_field(name="Channel", value=f"<#{town_channel.id}>", inline=False)
+        embed.add_field(name="Removed by", value=ctx.author.mention, inline=False)
+        await ctx.respond(embed=embed)
+    else:
+        await ctx.respond(response)
+
+@bot.command(description="Allows a citizen to self assign a town", brief="Allows a citizen to self assign a town", usage="selfassign <town_name>")
+async def selfassign(ctx, town_name):
+    # check if the user has the role with the id 1120816529794146387
+    citizen = ctx.guild.get_role(1120816529794146387)
+    if citizen not in ctx.author.roles:
+        await ctx.respond("You must be a citizen to use this command", ephemeral=True)
+        return
+
+
+    guild = guilds.get_guild(guilds.get_guild_index(ctx.guild.id))
+    towns = guild.get_towns()
+    for town in towns:
+        if town["name"] == town_name:
+            role = guild.get_role(town["role"])
+            if role != None:
+                await ctx.author.add_roles(role)
+                guild.add_new_member(town["name"], ctx.author.name, ctx.author.id)
+                embed = discord.Embed(title="Town Self Assigned", description="Town Self Assigned", color=0x00a6ff)
+                embed.add_field(name="User", value=ctx.author.mention, inline=False)
+                embed.add_field(name="Town", value=town["name"], inline=False)
+                await ctx.respond(embed=embed)
+                return
+            else:
+                await ctx.respond("This town does not have a role", ephemeral=True)
+                return
+    await ctx.respond("This town does not exist", ephemeral=True)
+    return
 
 # Run the bot
 bot.run(token)

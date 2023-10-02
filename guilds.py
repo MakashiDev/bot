@@ -91,7 +91,8 @@ class Guilds:
             "guildName": guildName,
             "members": members,
             "channels": channels,
-            "roles": roles 
+            "roles": roles,
+            "towns": [],
         })
         self.update_data(data)
         
@@ -349,6 +350,66 @@ class Guild:
         """
         data = self.get_data()
         data["ticketMsg"] = messageID
+        self.update_data(data)
+
+    def add_role_to_town(self, town_name, role):
+        """
+        Parameters
+        ----------
+        town_name : str
+            The name of the town to add the role to.
+        role : int
+            The id of the role to add.
+        """
+        data = self.get_data()
+        for i in range(len(data["towns"])):
+            if data["towns"][i]["name"] == town_name:
+                data["towns"][i]["role"] = role
+                break
+        self.update_data(data)
+    
+    def add_channel_to_town(self, town_name, channel):
+        """
+        Parameters
+        ----------
+        town_name : str
+            The name of the town to add the channel to.
+        channel : int
+            The id of the channel to add.
+        """
+        data = self.get_data()
+        for i in range(len(data["towns"])):
+            if data["towns"][i]["name"] == town_name:
+                data["towns"][i]["channel"] = channel
+                break
+        self.update_data(data)
+
+    def remove_role_from_town(self, town_name):
+        """
+        Parameters
+        ----------
+        town_name : str
+            The name of the town to remove the role from.
+        """
+        data = self.get_data()
+        for i in range(len(data["towns"])):
+            if data["towns"][i]["name"] == town_name:
+                data["towns"][i]["role"] = None
+                break
+        self.update_data(data)
+
+    def remove_channel_from_town(self, town_name):
+        """
+        Parameters
+        ----------
+        town_name : str
+            The name of the town to remove the channel from.
+        """
+        data = self.get_data()
+        for i in range(len(data["towns"])):
+            if data["towns"][i]["name"] == town_name:
+                data["towns"][i]["channel"] = None
+                break
         self.update_data(data)
     
 
