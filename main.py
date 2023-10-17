@@ -2,6 +2,7 @@ import discord  # py-cord
 import logging
 import json
 from guilds import Guilds
+import os
 
 guilds = Guilds()
 
@@ -25,52 +26,12 @@ intents.guilds = True
 bot = discord.Bot(intents=intents)
 
 
-def getFromJson(serverID, index, group=None):
-    with open("config.json", "r") as f:
-        server = json.load(f)
-        servers = server["servers"]
-        for i in servers:
-            if i["guildId"] == serverID:
-                if group == None:
-                    return i[index]
-                else:
-                    if group == "town":
-                        for x in i["towns"]:
-                            if x["name"] == index:
-                                return x
-                    elif group == "roles":
-                        return i["roles"][index]
-                    elif group == "channels":
-                        return i["channels"][index]
-
-        
-    
-def setToJson(serverID, index, value, group=None):
-    with open("config.json", "r") as f:
-        server = json.load(f)
-        servers = server["servers"]
-        for i in servers:
-            if i["guildId"] == serverID:
-                if group == None:
-                    i[index] = value
-                else:
-                    if group == "town":
-                        for x in i["towns"]:
-                            if x["name"] == index:
-                                x = value
-                    elif group == "roles":
-                        i["roles"][index] = value
-                    elif group == "channels":
-                        i["channels"][index] = value
-    with open("config.json", "w") as f:
-        json.dump(server, f)    
-
 
 @bot.event
 async def on_ready():
     print("Bot is ready")
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over the Kingdom of Doveria"))
-    await setUpTickets()
+    await setUpJoinTickets()
     # log with yellow text
     logging.info("Bot is ready")
 
@@ -191,14 +152,31 @@ async def createTicket(ticketType, interaction):
 
     class MyView(discord.ui.View):
         @discord.ui.button(label='Close Ticket', style=discord.ButtonStyle.red, emoji="🔒")
+        def __init__(self):
+            super().__init__(timeout=None)
         async def close(self, button: discord.ui.Button, interaction: discord.Interaction):
             # Log the ticket
             await ticketLogChannel.send(f"The ticket `{ticketChannel.name}` has been closed by {interaction.user.mention}")
+            
+            html_content = await generate_discord_log_html(ticketChannel)
+
+            # Write the HTML content to a file
+            with open('log.html', 'w') as f:
+                f.write(html_content)
+
+            #Send the file to Discord within an Embed
+            embed = discord.Embed(title=f"{ticketChannel.name} Logs",  color=0x00FF00)
+            embed.add_field(name="How to view" , value="Simply download the file and open it. It will open in your broswer to view.", inline=False)
+            embed.footer(text="Limit 200 messages")
+            await ticketLogChannel.respond(file=discord.File('log.html'), embed=embed)
+
+            # Delete the file from the bot
+            os.remove('log.html')
             # delete the channel
             await ticketChannel.delete()
 
     
-    await ticketChannel.send(embed=embed, view=MyView())
+    await ticketChannel.send(f"interaction.user.mention", embed=embed, view=MyView())
     await ticketLogChannel.send(f" The ticket `{ticketChannel.name}` has been created by {interaction.user.mention}")
 
     logging.info(
@@ -206,34 +184,22 @@ async def createTicket(ticketType, interaction):
 
     # Send a log message
 
-
-async def setUpTickets():
+async def setUpJoinTickets():
     # Varbibles 
 
     # Embed explaing how to create a ticket
-    embed = discord.Embed(title="How to create a ticket",
-                          description="To create a ticket click the button based on your ticket needs", color=0x00a6ff)
-    embed.add_field(name=":white_check_mark: Support",
-                    value="Click the button below to create a support ticket", inline=False)
+    embed = discord.Embed(title="How to join the country",
+                          description="You can join the country by clicking the button below", color=0x00a6ff)
     embed.add_field(name=":trophy: Joining",
                     value="Click the button below to create a joining ticket", inline=False)
-    embed.add_field(name=":man_shrugging: Other",
-                    value="Click the button below to create a other ticket", inline=False)
 
     class MyView(discord.ui.View):
         def __init__(self):
             super().__init__(timeout=None)
-        @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
-        async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
-            await createTicket("Support", interaction)
-
-        @discord.ui.button(label='Joining', style=discord.ButtonStyle.grey, emoji="🏆")
+        @discord.ui.button(label='Join', style=discord.ButtonStyle.grey, emoji="🏆")
         async def joining(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Joining", interaction)
 
-        @discord.ui.button(label='Other', style=discord.ButtonStyle.grey, emoji="🤷‍♂️")
-        async def other(self, button: discord.ui.Button, interaction: discord.Interaction):
-            await createTicket("Other", interaction)
 
 
     # Setup all servers tickets
@@ -258,6 +224,48 @@ async def setUpTickets():
 
     # Send a log message
     logging.info("Ticket setup complete")
+
+async def setUpTownTickets():
+    # Varbibles 
+
+    # Embed explaing how to apply to make a new town
+    embed = discord.Embed(title="How to apply to make a new town",
+                            description="You can apply to make a new town by clicking the button below", color=0x00a6ff)
+    embed.add_field(name=":trophy: Town",
+                    value="Click the button below to create a town application ticket", inline=False)
+    
+    class MyView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=None)
+        @discord.ui.button(label='Town', style=discord.ButtonStyle.grey, emoji="🏰")
+        async def town(self, button: discord.ui.Button, interaction: discord.Interaction):
+            await createTicket("Town", interaction)
+            
+
+
+    # Setup all servers tickets
+    servers = guilds.get_guilds()
+
+    # Loop through all servers
+    for server in servers:
+        # Get the server
+        guild = bot.get_guild(server["guildId"])
+        # Get the ticket channel
+        print(server["channels"]["ticket"])
+        ticketChannel = guild.get_channel(server["channels"]["ticket"])  
+        try:
+            message = await ticketChannel.fetch_message(server["ticketMsg"])
+            await message.edit(embed=embed, view=MyView())
+        except:
+            message = await ticketChannel.send(embed=embed, view=MyView())
+            await message.pin()
+            await ticketChannel.last_message.delete()
+            server["ticketMsg"] = message.id
+            guilds.update_guild(server["guildId"], server)
+
+    # Send a log message
+    logging.info("Ticket setup complete")
+
 
 
 @bot.event
@@ -446,7 +454,7 @@ async def ticket(ctx):
     if str(ctx.author.id) == "577985634359050251":
         logging.info(
             f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
-        await setUpTickets()
+        await setUpJoinTickets()
     else:
         logging.info(
             f"User: {ctx.author.name}#{ctx.author.discriminator} | Command: {ctx.command.name}")
@@ -705,7 +713,35 @@ async def removeuserfromtown(ctx, member: discord.Member, town_name):
         await ctx.respond(embed=embed)
     else:
         await ctx.respond(response)
+
+
+async def generate_discord_log_html(channel: discord.TextChannel):
+    # Get all messages from the channel
     
+
+    # Start building the HTML content
+    html_content = '<!DOCTYPE html><html lang="en"> <head> <title>'+ channel.name +' <meta charset="UTF-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <style> body { font-family: Arial, sans-serif; background-color: #36393f; color: #fff; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; } .dm-container { background-color: #2f3136; border-radius: 5px; padding: 20px; height: 100%; width: 100%; } .message { margin: 10px 0; display: flex; } .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #7289da; } .message-content { background-color: #40444b; border-radius: 10px; padding: 10px; margin-left: 10px; flex-grow: 1; } .username { font-weight: bold; color: #7289da; margin-right: 5px; } .timestamp { font-size: 12px; color: #999; } .message-text { margin-top: 5px; } </style> </head> <body> <div class="dm-container">'
+
+    async for message in channel.history(limit=200):
+        # For each message, format it as a Discord-like chat bubble
+        username = message.author.display_name
+        content = message.content
+        time = message.created_at.strftime("%H:%M")+" UTC"
+        avatarURL = message.author.display_avatar.url
+
+
+        # Format the message as a chat bubble
+        message_html = f'<div class="message"> <div class="user-avatar"><img src="{avatarURL}" class="user-avatar" alt="User Avatar" /></div> <div class="message-content"> <span class="username">{username}</span> <span class="timestamp">{time}</span> <div class="message-text"> {content} </div> </div> </div> '
+
+        # Append the message HTML to the overall content
+        html_content += message_html
+
+    # Close the HTML body and document
+    html_content += '</div> </body> </html>'
+
+    return html_content
+
+        
 
 # Run the bot
 bot.run(token)
