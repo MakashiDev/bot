@@ -151,9 +151,9 @@ async def createTicket(ticketType, interaction):
         f"Ticket created: {ticketChannel.name} | User: {interaction.user.name}#{interaction.user.discriminator}")
 
     class MyView(discord.ui.View):
-        @discord.ui.button(label='Close Ticket', style=discord.ButtonStyle.red, emoji="🔒")
         def __init__(self):
             super().__init__(timeout=None)
+        @discord.ui.button(label='Close Ticket', style=discord.ButtonStyle.red, emoji="🔒")
         async def close(self, button: discord.ui.Button, interaction: discord.Interaction):
             # Log the ticket
             await ticketLogChannel.send(f"The ticket `{ticketChannel.name}` has been closed by {interaction.user.mention}")
@@ -167,8 +167,8 @@ async def createTicket(ticketType, interaction):
             #Send the file to Discord within an Embed
             embed = discord.Embed(title=f"{ticketChannel.name} Logs",  color=0x00FF00)
             embed.add_field(name="How to view" , value="Simply download the file and open it. It will open in your broswer to view.", inline=False)
-            embed.footer(text="Limit 200 messages")
-            await ticketLogChannel.respond(file=discord.File('log.html'), embed=embed)
+            embed.set_footer(text="This is an automated message. If you have any questions please contact a staff member. There is 200 message limit.")
+            await ticketLogChannel.send(file=discord.File('log.html'), embed=embed)
 
             # Delete the file from the bot
             os.remove('log.html')
@@ -190,15 +190,29 @@ async def setUpJoinTickets():
     # Embed explaing how to create a ticket
     embed = discord.Embed(title="How to join the country",
                           description="You can join the country by clicking the button below", color=0x00a6ff)
+    embed.add_field(name=":white_check_mark: Support",
+                    value="Click the button below to create a support ticket", inline=False)
     embed.add_field(name=":trophy: Joining",
                     value="Click the button below to create a joining ticket", inline=False)
-
+    embed.add_field(name=":man_shrugging: Other",
+                    value="Click the button below to create a other ticket", inline=False)
+    
+    
+    
     class MyView(discord.ui.View):
         def __init__(self):
             super().__init__(timeout=None)
-        @discord.ui.button(label='Join', style=discord.ButtonStyle.grey, emoji="🏆")
+        @discord.ui.button(label='Support', style=discord.ButtonStyle.grey, emoji="✅")
+        async def support(self, button: discord.ui.Button, interaction: discord.Interaction):
+            await createTicket("Support", interaction)
+
+        @discord.ui.button(label='Joining', style=discord.ButtonStyle.grey, emoji="🏆")
         async def joining(self, button: discord.ui.Button, interaction: discord.Interaction):
             await createTicket("Joining", interaction)
+
+        @discord.ui.button(label='Other', style=discord.ButtonStyle.grey, emoji="🤷‍♂️")
+        async def other(self, button: discord.ui.Button, interaction: discord.Interaction):
+            await createTicket("Other", interaction)
 
 
 
