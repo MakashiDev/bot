@@ -156,28 +156,39 @@ async def createTicket(ticketType, interaction):
         @discord.ui.button(label='Close Ticket', style=discord.ButtonStyle.red, emoji="🔒")
         async def close(self, button: discord.ui.Button, interaction: discord.Interaction):
             # Log the ticket
-            await ticketLogChannel.send(f"The ticket `{ticketChannel.name}` has been closed by {interaction.user.mention}")
-            
             html_content = await generate_discord_log_html(ticketChannel)
 
             # Write the HTML content to a file
             with open('log.html', 'w') as f:
                 f.write(html_content)
 
-            #Send the file to Discord within an Embed
-            embed = discord.Embed(title=f"{ticketChannel.name} Logs",  color=0x00FF00)
-            embed.add_field(name="How to view" , value="Simply download the file and open it. It will open in your broswer to view.", inline=False)
-            embed.set_footer(text="This is an automated message. If you have any questions please contact a staff member. There is 200 message limit.")
-            await ticketLogChannel.send(file=discord.File('log.html'), embed=embed)
+            #Send the close embed with the log file
+            embed = discord.Embed(title=f"Ticket Closed and Deleted",  color=0xFF0000)
+            embed.add_field(name="User", value=interaction.user.mention, inline=False)
+            embed.add_field(name="Ticket", value=f"`{ticketChannel.name}`", inline=False)
+            embed.add_field(name="How to view logs" , value="Simply download the file and open it. It will open in your broswer to view.", inline=False)
+            await ticketChannel.send(embed=embed, file=discord.File('log.html'))
+
+            
+            
+            
 
             # Delete the file from the bot
             os.remove('log.html')
             # delete the channel
             await ticketChannel.delete()
 
+            # Send a log message
+            logging.info(
+                f"Ticket closed: {ticketChannel.name} | User: {interaction.user.name}#{interaction.user.discriminator}")
+
     
     await ticketChannel.send(embed=embed, view=MyView())
-    await ticketLogChannel.send(f" The ticket `{ticketChannel.name}` has been created by {interaction.user.mention}")
+    #await ticketLogChannel.send(f" The ticket `{ticketChannel.name}` has been created by {interaction.user.mention}")
+    embed = discord.Embed(title="Ticket Created", description="Ticket Created", color=0x00a6ff)
+    embed.add_field(name="User", value=interaction.user.mention, inline=False)
+    embed.add_field(name="Ticket", value=ticketChannel.mention, inline=False)
+    await ticketLogChannel.send(embed=embed)
 
     logging.info(
         f"Ticket closed: {ticketChannel.name} | User: {interaction.user.name}#{interaction.user.discriminator}")
