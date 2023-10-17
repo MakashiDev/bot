@@ -717,6 +717,29 @@ async def removeuserfromtown(ctx, member: discord.Member, town_name):
 
 async def generate_discord_log_html(channel: discord.TextChannel):
     # Get all messages from the channel
+    # Start building the HTML content
+    html_content = '<!DOCTYPE html><html lang="en"> <head> <title>'+ channel.name +' <meta charset="UTF-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <style> body { font-family: Arial, sans-serif; background-color: #36393f; color: #fff; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; } .dm-container { background-color: #2f3136; border-radius: 5px; padding: 20px; height: 100%; width: 100%; } .message { margin: 10px 0; display: flex; } .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #7289da; } .message-content { background-color: #40444b; border-radius: 10px; padding: 10px; margin-left: 10px; flex-grow: 1; } .username { font-weight: bold; color: #7289da; margin-right: 5px; } .timestamp { font-size: 12px; color: #999; } .message-text { margin-top: 5px; } </style> </head> <body> <div class="dm-container">'
+
+    async for message in channel.history(limit=200):
+        # For each message, format it as a Discord-like chat bubble
+        username = message.author.display_name
+        content = message.content
+        time = message.created_at.strftime("%H:%M")+" UTC"
+        avatarURL = message.author.display_avatar.url
+
+
+        # Format the message as a chat bubble
+        message_html = f'<div class="message"> <div class="user-avatar"><img src="{avatarURL}" class="user-avatar" alt="User Avatar" /></div> <div class="message-content"> <span class="username">{username}</span> <span class="timestamp">{time}</span> <div class="message-text"> {content} </div> </div> </div> '
+
+        # Append the message HTML to the overall content
+        html_content += message_html
+
+    # Close the HTML body and document
+    html_content += '</div> </body> </html>'
+
+    return html_content
+
+
     
 @bot.command(description="Adds a role to a town", brief="Adds a role to a town", usage="addtownrole <town_name> <town_role>")
 @discord.default_permissions(administrator=True)
@@ -815,29 +838,7 @@ async def selfassign(ctx, town_name):
     await ctx.respond("This town does not exist", ephemeral=True)
     return
 
-    # Start building the HTML content
-    html_content = '<!DOCTYPE html><html lang="en"> <head> <title>'+ channel.name +' <meta charset="UTF-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <style> body { font-family: Arial, sans-serif; background-color: #36393f; color: #fff; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; } .dm-container { background-color: #2f3136; border-radius: 5px; padding: 20px; height: 100%; width: 100%; } .message { margin: 10px 0; display: flex; } .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #7289da; } .message-content { background-color: #40444b; border-radius: 10px; padding: 10px; margin-left: 10px; flex-grow: 1; } .username { font-weight: bold; color: #7289da; margin-right: 5px; } .timestamp { font-size: 12px; color: #999; } .message-text { margin-top: 5px; } </style> </head> <body> <div class="dm-container">'
-
-    async for message in channel.history(limit=200):
-        # For each message, format it as a Discord-like chat bubble
-        username = message.author.display_name
-        content = message.content
-        time = message.created_at.strftime("%H:%M")+" UTC"
-        avatarURL = message.author.display_avatar.url
-
-
-        # Format the message as a chat bubble
-        message_html = f'<div class="message"> <div class="user-avatar"><img src="{avatarURL}" class="user-avatar" alt="User Avatar" /></div> <div class="message-content"> <span class="username">{username}</span> <span class="timestamp">{time}</span> <div class="message-text"> {content} </div> </div> </div> '
-
-        # Append the message HTML to the overall content
-        html_content += message_html
-
-    # Close the HTML body and document
-    html_content += '</div> </body> </html>'
-
-    return html_content
-
-        
+    
 
 # Run the bot
 bot.run(token)
