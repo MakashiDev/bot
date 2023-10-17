@@ -2554,4 +2554,6 @@ env/lib/python3.9/site-packages/xpc/__init__.py
 env/lib/python3.9/site-packages/xpc/_metadata.py
 env/lib/python3.9/site-packages/xpc/_xpc.cpython-39-darwin.so
 
+__pycache__/
+
 config.json
