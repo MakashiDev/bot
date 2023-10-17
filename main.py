@@ -167,7 +167,7 @@ async def createTicket(ticketType, interaction):
             embed.add_field(name="User", value=interaction.user.mention, inline=False)
             embed.add_field(name="Ticket", value=f"`{ticketChannel.name}`", inline=False)
             embed.add_field(name="How to view logs" , value="Simply download the file and open it. It will open in your broswer to view.", inline=False)
-            await ticketChannel.send(embed=embed, file=discord.File('log.html'))
+            await ticketLogChannel.send(embed=embed, file=discord.File('log.html'))
 
             
             
