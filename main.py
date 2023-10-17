@@ -145,7 +145,7 @@ async def createTicket(ticketType, interaction):
         text="You can upload screenshots or any other related information.")
 
     await ticketChannel.send(supportRole.mention)
-    await ticketChannel.send("A support representative will be with you shortly. Please be patient.")
+    await ticketChannel.send(f"{interaction.user.mention} A support representative will be with you shortly. Please be patient.")
 
     logging.info(
         f"Ticket created: {ticketChannel.name} | User: {interaction.user.name}#{interaction.user.discriminator}")
@@ -176,7 +176,7 @@ async def createTicket(ticketType, interaction):
             await ticketChannel.delete()
 
     
-    await ticketChannel.send(f"interaction.user.mention", embed=embed, view=MyView())
+    await ticketChannel.send(embed=embed, view=MyView())
     await ticketLogChannel.send(f" The ticket `{ticketChannel.name}` has been created by {interaction.user.mention}")
 
     logging.info(
